@@ -2,9 +2,9 @@
 
 2025-2028年FIG採点規則に対応した体操競技のDスコア計算システムです。
 
-## 🌐 デモサイト
+## 🌐 Webアプリケーション
 
-https://kaito-imadu.github.io/gymnastics-d-score/
+https://kaito-imadu.github.io/D-score-Calculation/
 
 ## 📋 機能
 
