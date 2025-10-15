@@ -516,8 +516,10 @@ function displayCurrentRoutine(apparatus) {
     const routine = currentRoutines[apparatus];
     for (let i = 0; i < routine.length; i++) {
         let skillDiv;
-        // カスタム技かどうかで作成関数を分ける
-        if (routine[i].isCustom) {
+        // a技、カスタム技、通常技で作成関数を分ける
+        if (routine[i].isASkill) {
+            skillDiv = createASkillInputElement(apparatus, i, routine[i]);
+        } else if (routine[i].isCustom) {
             skillDiv = createCustomSkillInputElement(apparatus, i, routine[i]);
         } else {
             skillDiv = createSkillInputElement(apparatus, i, routine[i]);
@@ -572,6 +574,92 @@ function addCustomSkillToApparatus(apparatus) {
     }
 }
 
+
+// a技入力要素を作成（難度a固定、平均台とゆかはskillType選択あり）
+function createASkillInputElement(apparatus, skillIndex, skill) {
+    console.log(`=== Creating a-skill element for ${apparatus}-${skillIndex} ===`);
+    
+    const skillDiv = document.createElement('div');
+    skillDiv.className = 'skill-input-group';
+    skillDiv.style.position = 'relative';
+    
+    const skillNumber = document.createElement('div');
+    skillNumber.className = 'skill-number';
+    skillNumber.textContent = skillIndex + 1;
+    
+    // 技名入力
+    const skillInput = document.createElement('input');
+    skillInput.type = 'text';
+    skillInput.className = 'skill-input';
+    skillInput.placeholder = '技名を入力';
+    skillInput.value = skill ? skill.name : '';
+    skillInput.dataset.apparatus = apparatus;
+    skillInput.dataset.skillIndex = skillIndex;
+    skillInput.addEventListener('input', function() {
+        currentRoutines[apparatus][skillIndex].name = this.value;
+        calculateScore(apparatus);
+        storageManager.saveToStorage();
+    });
+    
+    // 難度選択（a固定、disabled）
+    const difficultySelect = document.createElement('select');
+    difficultySelect.className = 'difficulty-select';
+    difficultySelect.innerHTML = '<option value="a">a (0.1)</option>';
+    difficultySelect.value = 'a';
+    difficultySelect.disabled = true;
+    
+    // skillType選択（平均台とゆかのみ）
+    let skillTypeSelect = null;
+    if (apparatus === 'BB' || apparatus === 'FX') {
+        skillTypeSelect = document.createElement('select');
+        skillTypeSelect.className = 'skill-type-select';
+        skillTypeSelect.style.width = '70px';
+        skillTypeSelect.style.fontSize = '12px';
+        
+        const acroOption = document.createElement('option');
+        acroOption.value = 'acro';
+        acroOption.textContent = 'アクロ';
+        
+        const danceOption = document.createElement('option');
+        danceOption.value = 'dance';
+        danceOption.textContent = 'ダンス';
+        
+        skillTypeSelect.appendChild(acroOption);
+        skillTypeSelect.appendChild(danceOption);
+        
+        if (skill && skill.skillType) {
+            skillTypeSelect.value = skill.skillType;
+        } else {
+            skillTypeSelect.value = 'acro';
+        }
+        
+        skillTypeSelect.addEventListener('change', () => {
+            currentRoutines[apparatus][skillIndex].skillType = skillTypeSelect.value;
+            calculateScore(apparatus);
+            storageManager.saveToStorage();
+        });
+    }
+    
+    // 削除ボタン
+    const removeButton = document.createElement('button');
+    removeButton.className = 'remove-skill';
+    removeButton.innerHTML = '×';
+    removeButton.onclick = () => removeSkill(apparatus, skillIndex);
+    
+    // ドラッグ&ドロップ
+    setupDragAndDrop(skillDiv, apparatus, skillIndex);
+    
+    skillDiv.appendChild(skillNumber);
+    skillDiv.appendChild(skillInput);
+    skillDiv.appendChild(difficultySelect);
+    if (skillTypeSelect) {
+        skillDiv.appendChild(skillTypeSelect);
+    }
+    skillDiv.appendChild(removeButton);
+    
+    console.log(`=== a-skill element created successfully for ${apparatus}-${skillIndex} ===`);
+    return skillDiv;
+}
 
 // 女子体操用カスタム技入力要素を作成
 function createCustomSkillInputElement(apparatus, skillIndex, skill = null) {

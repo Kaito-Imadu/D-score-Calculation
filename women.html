@@ -68,6 +68,7 @@
             }
         }
         
+function addASkill(apparatus) {            console.log('addASkill called for:', apparatus);                        if (typeof currentRoutines === 'undefined') {                console.error('currentRoutines is not defined yet');                alert('システムが完全に読み込まれていません。少し待ってからお試しください。');                return;            }                        const aSkill = {                name: '',                difficulty: 'a',                elementGroup: '',                isCustom: true,                isASkill: true,                skillType: 'acro'             };                        console.log('Creating a-skill:', aSkill);                        if (!currentRoutines[apparatus]) {                currentRoutines[apparatus] = [];            }            currentRoutines[apparatus].push(aSkill);                        console.log(`Added a-skill to ${apparatus}:`, aSkill);                        if (typeof displayCurrentRoutine === 'function') {                displayCurrentRoutine(apparatus);            }                        if (typeof calculateScore === 'function') {                calculateScore(apparatus);            }                        if (typeof historyManager !== 'undefined' && typeof historyManager.takeSnapshot === 'function') {                historyManager.takeSnapshot(`Add a-skill to ${apparatus}`);            }        }
         function generateReport() {
             try {
                 console.log('Generate report button clicked');
@@ -1477,7 +1478,7 @@
                     <div class="skill-input-section" id="ub-skills"></div>
                     <div style="display: flex; gap: 4px; align-items: center;">
                         <button class="add-skill-button" onclick="addSkillInput('UB')">技を追加</button>
-                        <button onclick="addCustomSkillToApparatus('UB')" style="background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; margin-bottom: 12px;">a</button>
+                        <button onclick="addASkill('UB')" style="background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; margin-bottom: 12px;">a</button>
                     </div>
                 </div>
                 
@@ -1566,7 +1567,7 @@
                     <div class="skill-input-section" id="bb-skills"></div>
                     <div style="display: flex; gap: 4px; align-items: center;">
                         <button class="add-skill-button" onclick="addSkillInput('BB')">技を追加</button>
-                        <button onclick="addCustomSkillToApparatus('BB')" style="background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; margin-bottom: 12px;">a</button>
+                        <button onclick="addASkill('BB')" style="background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; margin-bottom: 12px;">a</button>
                     </div>
                 </div>
                 
@@ -1667,7 +1668,7 @@
                     <div class="skill-input-section" id="fx-skills"></div>
                     <div style="display: flex; gap: 4px; align-items: center;">
                         <button class="add-skill-button" onclick="addSkillInput('FX')">技を追加</button>
-                        <button onclick="addCustomSkillToApparatus('FX')" style="background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; margin-bottom: 12px;">a</button>
+                        <button onclick="addASkill('FX')" style="background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; margin-bottom: 12px;">a</button>
                     </div>
                 </div>
                 
@@ -2335,7 +2336,7 @@
     </script>
 
     <!-- メインスクリプト（レポート関数の後に読み込み） -->
-    <script src="women_gymnastics_d_score.js"></script>
+    <script src="women_gymnastics_d_score.js?v=2.1"></script>
 
     <script>
         // モバイル判定とUI調整
