@@ -1,0 +1,2228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#667eea">
+    <title>体操競技 Dスコア計算システム</title>
+    <script>
+        // グローバル関数を先に定義
+        function showReportDialog() {
+            console.log('showReportDialog called');
+            const dialog = document.getElementById('report-dialog');
+            const titleInput = document.getElementById('report-title');
+            const nameInput = document.getElementById('report-name');
+            
+            if (!dialog) {
+                console.error('Report dialog not found');
+                return;
+            }
+            
+            // titleInput.value = titleInput.value || '';
+            dialog.style.display = 'flex';
+            
+            console.log('Calling updateReportPreview...');
+            if (typeof updateReportPreview === 'function') {
+                updateReportPreview();
+            } else {
+                console.error('updateReportPreview function not found');
+            }
+            titleInput.focus();
+        }
+        
+        function confirmReset() {
+            if (confirm('すべての入力をリセットしてもよろしいですか？この操作は元に戻せません。')) {
+                if (typeof historyManager !== 'undefined') {
+                    historyManager.resetAll();
+                }
+            }
+        }
+        
+        function clearStoredData() {
+            if (confirm('ブラウザに保存されたデータを削除します。リロード後に入力が復元されなくなりますがよろしいですか？')) {
+                if (typeof storageManager !== 'undefined') {
+                    storageManager.clearStorage();
+                }
+                alert('保存データが削除されました。');
+            }
+        }
+        
+        function generateReport() {
+            try {
+                console.log('Generate report button clicked');
+                const title = document.getElementById('report-title').value || '大会名';
+                const name = document.getElementById('report-name').value || '未入力';
+                
+                document.getElementById('report-dialog').style.display = 'none';
+                
+                // レポート内容を生成
+                if (typeof createReportContent === 'function') {
+                    createReportContent(title, name);
+                }
+            
+                // 画像として保存
+                const container = document.getElementById('report-container');
+                if (container) {
+                    container.style.left = '0px';
+                    container.style.top = '0px';
+                    
+                    if (typeof html2canvas !== 'undefined') {
+                        html2canvas(container, {
+                            width: 1123,
+                            height: 794,
+                            scale: 2,
+                            useCORS: true
+                        }).then(function(canvas) {
+                            // 画像生成後、コンテナを元の位置に戻す
+                            container.style.left = '-9999px';
+                            container.style.top = '-9999px';
+                            
+                            // モバイル端末の判定
+                            const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                                           ('ontouchstart' in window) || 
+                                           (navigator.maxTouchPoints > 0);
+                            
+                            const filename = '体操競技Dスコア計算結果_' + name + '_' + new Date().toLocaleDateString('ja-JP').replace(/\//g, '-') + '.png';
+                            
+                            if (isMobile && navigator.share) {
+                                // モバイル版：Web Share APIを使用して写真として共有
+                                canvas.toBlob(function(blob) {
+                                    const file = new File([blob], filename, { type: 'image/png' });
+                                    
+                                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                                        navigator.share({
+                                            files: [file],
+                                            title: '大会名',
+                                            text: '体操競技のDスコア計算結果です'
+                                        }).then(() => {
+                                            console.log('Successfully shared');
+                                        }).catch((error) => {
+                                            console.log('Error sharing:', error);
+                                            // フォールバック: 通常のダウンロード
+                                            fallbackDownload(canvas, filename);
+                                        });
+                                    } else {
+                                        // Web Share API が利用できない場合はフォールバック
+                                        fallbackDownload(canvas, filename);
+                                    }
+                                }, 'image/png');
+                            } else {
+                                // デスクトップ版：通常のダウンロード
+                                fallbackDownload(canvas, filename);
+                            }
+                            
+                            console.log('Report image generated and container hidden');
+                        }).catch(function(error) {
+                            // エラー時もコンテナを隠す
+                            container.style.left = '-9999px';
+                            container.style.top = '-9999px';
+                            
+                            console.error('html2canvas error:', error);
+                            alert('画像生成に失敗しました: ' + error.message);
+                        });
+                    } else {
+                        alert('html2canvasライブラリが読み込まれていません');
+                    }
+                } else {
+                    alert('レポートコンテナが見つかりません');
+                }
+            } catch (error) {
+                console.error('Error in generateReport:', error);
+                alert('レポート生成中にエラーが発生しました: ' + error.message);
+            }
+        }
+        
+        function updatePreview() {
+            if (typeof updateReportPreview === 'function') {
+                updateReportPreview();
+            }
+        }
+        
+        function closeReportDialog() {
+            document.getElementById('report-dialog').style.display = 'none';
+        }
+        
+        // フォールバック用のダウンロード関数
+        function fallbackDownload(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // ヘルプダイアログを表示
+        function showHelpDialog() {
+            const dialog = document.getElementById('help-dialog');
+            if (dialog) {
+                dialog.style.display = 'flex';
+            }
+        }
+        
+        // ヘルプダイアログを閉じる
+        function closeHelpDialog() {
+            const dialog = document.getElementById('help-dialog');
+            if (dialog) {
+                dialog.style.display = 'none';
+            }
+        }
+        
+        
+        // a難度技を素早く追加する関数
+        function addASkill(apparatus) {
+            console.log('addASkill called for:', apparatus);
+            
+            // currentRoutinesが存在するかチェック
+            if (typeof currentRoutines === 'undefined') {
+                console.error('currentRoutines is not defined yet');
+                alert('システムが完全に読み込まれていません。少し待ってからお試しください。');
+                return;
+            }
+            
+            // a難度技オブジェクトを作成（グループなし、難度a）
+            const aSkill = {
+                name: '',
+                elementGroup: '', // グループなし
+                eg: '', // 両方のプロパティを設定
+                difficulty: 'a',
+                isCustom: true, // カスタム技として扱う
+                isASkill: true // a技フラグ
+            };
+            
+            console.log('Creating a-skill:', aSkill);
+            
+            // 現在のルーティンに追加
+            if (!currentRoutines[apparatus]) {
+                currentRoutines[apparatus] = [];
+            }
+            currentRoutines[apparatus].push(aSkill);
+            
+            console.log(`Added a-skill to ${apparatus}:`, aSkill);
+            
+            // UIを更新（関数が存在する場合のみ）
+            if (typeof displayCurrentRoutine === 'function') {
+                displayCurrentRoutine(apparatus);
+            }
+            if (typeof calculateScore === 'function') {
+                calculateScore(apparatus);
+            }
+            
+            // 履歴に追加（関数が存在する場合のみ）
+            if (typeof historyManager !== 'undefined' && historyManager.addState) {
+                historyManager.addState({
+                    type: 'add_a_skill',
+                    apparatus: apparatus,
+                    skill: aSkill,
+                    index: currentRoutines[apparatus].length - 1
+                });
+            }
+            
+            // データ保存（関数が存在する場合のみ）
+            if (typeof storageManager !== 'undefined' && storageManager.saveToStorage) {
+                storageManager.saveToStorage();
+            }
+        }
+        
+        
+        // Escapeキーでヘルプダイアログを閉じる
+        document.addEventListener('DOMContentLoaded', function() {
+            document.addEventListener('keydown', function(e) {
+                const helpDialog = document.getElementById('help-dialog');
+                if (helpDialog && helpDialog.style.display === 'flex') {
+                    if (e.key === 'Escape') {
+                        closeHelpDialog();
+                    }
+                }
+            });
+        });
+        // レポート内容を作成
+        function createReportContent(title, name) {
+            try {
+                console.log('Starting report creation...');
+                console.log('Title:', title, 'Name:', name);
+                
+                const reportContent = document.getElementById('report-content');
+                if (!reportContent) {
+                    console.error('report-content element not found');
+                    return;
+                }
+                console.log('report-content element found:', reportContent);
+                const now = new Date();
+            const dateStr = now.toLocaleDateString('ja-JP', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+            });
+            const timeStr = now.toLocaleTimeString('ja-JP', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false
+            });
+
+            const apparatusNames = {
+                'FX': 'ゆか',
+                'PH': 'あん馬',
+                'SR': 'つり輪',
+                'VT': '跳馬',
+                'PB': '平行棒',
+                'HB': '鉄棒'
+            };
+            
+            // 総合スコア計算
+            let totalDScore = 0;
+            let totalEScore = 0;
+            let totalND = 0;
+
+            // 各種目の総合計算
+            console.log('=== REPORT TOTAL SCORE CALCULATION ===');
+            Object.keys(apparatusNames).forEach(apparatus => {
+                if (apparatus === 'VT') {
+                    // 跳馬は手動入力値を直接取得
+                    const vaultDScore = parseFloat(document.getElementById('vt-d-score')?.value) || 0;
+                    const vaultEScore = parseFloat(document.getElementById('vt-e-score-input')?.value) || 8.5;
+                    const vaultOtherND = parseFloat(document.getElementById('vt-other-nd-input')?.value) || 0;
+                    
+                    console.log(`${apparatus}: D=${vaultDScore}, E=${vaultEScore}, ND=${vaultOtherND}`);
+                    totalDScore += vaultDScore;
+                    totalEScore += vaultEScore;
+                    totalND += vaultOtherND; // 跳馬は技不足NDなし
+                } else {
+                    // 他の種目はDOM要素から取得
+                    const totalElement = document.getElementById(`${apparatus.toLowerCase()}-total-score`);
+                    const eScoreInput = document.getElementById(`${apparatus.toLowerCase()}-e-score-input`);
+                    const skillNDElement = document.getElementById(`${apparatus.toLowerCase()}-skill-nd`);
+                    const otherNDInput = document.getElementById(`${apparatus.toLowerCase()}-other-nd-input`);
+                    
+                    const dScore = totalElement ? parseFloat(totalElement.textContent) || 0 : 0;
+                    const eScore = eScoreInput ? parseFloat(eScoreInput.value) || 8.5 : 8.5;
+                    const skillND = skillNDElement ? parseFloat(skillNDElement.textContent?.replace('-', '')) || 0 : 0;
+                    const otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
+                    
+                    console.log(`${apparatus}: D=${dScore}, E=${eScore}, SkillND=${skillND}, OtherND=${otherND}`);
+                    totalDScore += dScore;
+                    totalEScore += eScore;
+                    totalND += skillND + otherND;
+                }
+            });
+            console.log(`TOTALS: D=${totalDScore.toFixed(1)}, E=${totalEScore.toFixed(1)}, ND=${totalND.toFixed(1)}`);
+            console.log('========================================');
+            const totalTargetScore = totalDScore + totalEScore - totalND;
+
+            let html = `
+                <div style="width: 297mm; min-height: 210mm; margin: 0 auto; padding: 15mm; background: white; box-sizing: border-box; font-family: 'MS PGothic', sans-serif; font-size: 10px; line-height: 1.3; color: #333; text-align: center;">
+                    <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid #4a90e2; padding-bottom: 10px;">
+                        <h1 style="font-size: 16px; margin: 0 0 5px 0; color: #2c3e50;">${title}</h1>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 12px; font-weight: bold;">氏名: ${name}</span>
+                            <span style="font-size: 10px; color: #666;">作成日: ${dateStr} ${timeStr}</span>
+                        </div>
+                        <!-- 総合スコア（色付きで見やすく） -->
+                        <div style="margin-top: 10px; padding: 10px; background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%); border: 2px solid #4a90e2; border-radius: 8px; font-size: 11px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="font-weight: bold; margin-bottom: 5px; color: #2c3e50; text-align: center;">総合スコア</div>
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="background: #e3f2fd; color: #1565c0; padding: 3px 6px; border-radius: 4px; font-weight: bold;">
+                                    D ${totalDScore.toFixed(1)}
+                                </span>
+                                <span style="color: #666;">+</span>
+                                <span style="background: #e8f5e8; color: #2e7d32; padding: 3px 6px; border-radius: 4px; font-weight: bold;">
+                                    E ${totalEScore.toFixed(1)}
+                                </span>
+                                <span style="color: #666;">-</span>
+                                <span style="background: #fff3e0; color: #f57c00; padding: 3px 6px; border-radius: 4px; font-weight: bold;">
+                                    ND ${totalND.toFixed(1)}
+                                </span>
+                                <span style="color: #666;">=</span>
+                                <span style="background: #fce4ec; color: #c2185b; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px;">
+                                    ${totalTargetScore.toFixed(1)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; text-align: left; max-width: 100%;">
+            `;
+
+            // 各種目の詳細
+            Object.keys(apparatusNames).forEach(apparatus => {
+                const routine = window.currentRoutines ? window.currentRoutines[apparatus] : [];
+                
+                // 実際の入力値からスコアを取得
+                let dScore, eScore, skillND, otherND, targetScore;
+                
+                if (apparatus === 'VT') {
+                    // 跳馬は手動入力値を直接取得
+                    dScore = parseFloat(document.getElementById('vt-d-score')?.value) || 0;
+                    eScore = parseFloat(document.getElementById('vt-e-score-input')?.value) || 8.5;
+                    skillND = 0; // 跳馬は技不足NDなし
+                    otherND = parseFloat(document.getElementById('vt-other-nd-input')?.value) || 0;
+                } else {
+                    // 他の種目はDOM要素から取得
+                    const totalElement = document.getElementById(`${apparatus.toLowerCase()}-total-score`);
+                    const eScoreInput = document.getElementById(`${apparatus.toLowerCase()}-e-score-input`);
+                    const skillNDElement = document.getElementById(`${apparatus.toLowerCase()}-skill-nd`);
+                    const otherNDInput = document.getElementById(`${apparatus.toLowerCase()}-other-nd-input`);
+                    
+                    dScore = totalElement ? parseFloat(totalElement.textContent) || 0 : 0;
+                    eScore = eScoreInput ? parseFloat(eScoreInput.value) || 8.5 : 8.5;
+                    skillND = skillNDElement ? parseFloat(skillNDElement.textContent?.replace('-', '')) || 0 : 0;
+                    otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
+                }
+                
+                targetScore = dScore + eScore - skillND - otherND;
+                
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 8px; border-radius: 5px; background: #fafafa; margin-bottom: 8px; break-inside: avoid; height: fit-content;">
+                        <h3 style="margin: 0 0 6px 0; font-size: 11px; color: #333; border-bottom: 1px solid #667eea; padding-bottom: 2px; text-align: center;">
+                            ${apparatusNames[apparatus]} (${apparatus})
+                        </h3>
+                        
+                        <!-- 技一覧 -->
+                        <div style="margin-bottom: 6px;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 7px;">
+                                <thead>
+                                    <tr style="background: #e9ecef;">
+                                        <th style="border: 1px solid #dee2e6; padding: 2px; text-align: center;">#</th>
+                                        <th style="border: 1px solid #dee2e6; padding: 2px; text-align: left;">技名</th>
+                                        <th style="border: 1px solid #dee2e6; padding: 2px; text-align: center;">EG</th>
+                                        <th style="border: 1px solid #dee2e6; padding: 2px; text-align: center;">難度</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+                
+                if (routine && routine.length > 0) {
+                    routine.forEach((skill, index) => {
+                        if (skill.name) {
+                            const eg = skill.elementGroup || skill.eg || '-';
+                            const difficulty = skill.difficulty || '-';
+                            html += `
+                                <tr>
+                                    <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center;">${index + 1}</td>
+                                    <td style="border: 1px solid #dee2e6; padding: 2px;">${skill.name}</td>
+                                    <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center;">${eg}</td>
+                                    <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center;">${difficulty}</td>
+                                </tr>
+                            `;
+                        }
+                    });
+                } else {
+                    html += `
+                        <tr>
+                            <td colspan="4" style="border: 1px solid #dee2e6; padding: 5px; text-align: center; color: #666;">技なし</td>
+                        </tr>
+                    `;
+                }
+                
+                html += `
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- スコア情報 -->
+                        <div style="background: #fff; padding: 5px; border: 1px solid #dee2e6; border-radius: 3px; font-size: 8px;">
+                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-bottom: 3px;">
+                                <div>D: <strong>${dScore.toFixed(1)}</strong></div>
+                                <div>E: <strong>${eScore.toFixed(1)}</strong></div>
+                                <div>ND: <strong>-${(skillND + otherND).toFixed(1)}</strong></div>
+                            </div>
+                            <div style="text-align: center; padding-top: 3px; border-top: 1px solid #dee2e6; font-weight: bold; color: #2c3e50;">
+                                目標点: ${targetScore.toFixed(1)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+            
+            reportContent.innerHTML = html;
+            console.log('Report creation completed successfully');
+            } catch (error) {
+                console.error('Error in createReportContent:', error);
+                alert('レポート作成中にエラーが発生しました: ' + error.message);
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            font-size: 20px;
+            line-height: 1.4;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 18px;
+            font-size: 32px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            line-height: 1.2;
+        }
+
+        .apparatus-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .tab-button {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 16px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            line-height: 1.1;
+            min-height: 40px;
+        }
+
+        .tab-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+
+        .tab-button.active {
+            background: white;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .apparatus-section {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            margin-bottom: 12px;
+        }
+
+        /* 2列レイアウトの定義 */
+        .apparatus-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            align-items: start;
+        }
+
+        .left-panel {
+            /* 左側：技名入力エリア */
+        }
+
+        .right-panel {
+            /* 右側：スコア詳細エリア */
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .apparatus-section.active {
+            display: block;
+        }
+
+        .skill-input-section {
+            margin-bottom: 15px;
+        }
+
+        .skill-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+            transition: all 0.2s ease;
+            cursor: move;
+            padding: 4px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .skill-input-group.dragging {
+            opacity: 0.7;
+            z-index: 1000;
+        }
+        
+        .skill-input-group.drag-over {
+            background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%);
+            border: 2px solid #2196f3;
+            border-radius: 8px;
+            transform: scale(1.02);
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        /* ドラッグ中のカーソル変更 */
+        .skill-input-group[draggable="true"]:hover {
+            cursor: grab;
+        }
+        
+        .skill-input-group[draggable="true"]:active {
+            cursor: grabbing;
+        }
+
+        .skill-number {
+            background: #667eea;
+            color: white;
+            padding: 4px 6px;
+            border-radius: 50%;
+            font-weight: bold;
+            min-width: 24px;
+            text-align: center;
+            font-size: 12px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 24px;
+            cursor: grab;
+            transition: all 0.2s ease;
+        }
+        
+        .skill-number:hover {
+            background: #5a6fd8;
+            transform: scale(1.1);
+        }
+        
+        .skill-number:active {
+            cursor: grabbing;
+            transform: scale(0.95);
+        }
+
+        .skill-input {
+            width: 270px;
+            flex: none;
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            line-height: 1.2;
+            min-width: 280px;
+            min-height: 36px;
+            position: relative;
+        }
+
+        .difficulty-select,
+        .group-select {
+            width: 90px !important;
+            flex: none !important;
+            flex-shrink: 0 !important;
+        }
+/* 色付きバッジを非表示 */        .skill-info {            display: none !important;        }
+
+        .skill-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .autocomplete-dropdown {
+            position: absolute !important;
+            background: white !important;
+            border: 1px solid #ccc !important;
+            border-radius: 3px !important;
+            max-height: 300px !important;
+            overflow-y: auto !important;
+            z-index: 10000 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+            display: none;
+            top: 32px !important;
+            left: 0 !important;
+            width: 100% !important;
+            font-size: 9px !important;
+            font-weight: normal !important;
+            font-family: inherit !important;
+        }
+        
+        .autocomplete-dropdown[style*="display: block"] {
+            display: block !important;
+        }
+
+        .autocomplete-item {
+            padding: 3px 8px !important;
+            cursor: pointer !important;
+            transition: background 0.1s ease !important;
+            border-bottom: 1px solid #eee !important;
+            font-size: 9px !important;
+            line-height: 1.3 !important;
+            color: #333 !important;
+            min-height: 18px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            font-weight: normal !important;
+            font-family: inherit !important;
+        }
+
+        .autocomplete-item:hover {
+            background: #f8f9ff;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .skill-info {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            margin-left: 4px;
+        }
+
+        .eg-badge, .difficulty-badge {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 24px;
+            line-height: 1;
+        }
+
+        .eg-badge {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .difficulty-badge {
+            background: #FF9800;
+            color: white;
+        }
+
+        .move-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        /* 矢印ボタンを非表示（技番号ドラッグのみ使用） */
+        .move-btn {
+            display: none !important;
+        }
+
+        /* ドロップターゲットインジケーター */
+        .drop-target-indicator {
+            height: 4px;
+            background: #2196f3;
+            margin: 4px 0;
+            border-radius: 2px;
+            opacity: 0;
+            transform: scaleX(0);
+            transition: all 0.2s ease;
+            position: relative;
+            box-shadow: 0 0 8px rgba(33, 150, 243, 0.5);
+        }
+
+        .drop-target-indicator.show {
+            opacity: 1;
+            transform: scaleX(1);
+        }
+
+        .drop-target-indicator::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-right: 8px solid #2196f3;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        .drop-target-indicator::after {
+            content: '';
+            position: absolute;
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 8px solid #2196f3;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+        }
+
+        .remove-skill {
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .remove-skill:hover {
+            background: #d32f2f;
+            transform: scale(1.1);
+        }
+
+        .add-skill-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            line-height: 1.1;
+            min-height: 36px;
+        }
+
+        .add-skill-button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .score-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            margin-top: 8px;
+        }
+
+        .score-display h2 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            line-height: 1.1;
+        }
+
+        .score-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .score-item {
+            background: rgba(255,255,255,0.2);
+            padding: 8px;
+            border-radius: 6px;
+            backdrop-filter: blur(10px);
+        }
+
+        .score-item h3 {
+            font-size: 11px;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+
+        .score-value {
+            font-size: 18px;
+            font-weight: bold;
+            line-height: 1;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 28px;
+        }
+
+        .requirements-check {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .requirements-check h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            line-height: 1.1;
+        }
+
+        .requirement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 12px;
+            line-height: 1.1;
+        }
+
+        .requirement-item:last-child {
+            border-bottom: none;
+        }
+
+        .requirement-status {
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: bold;
+            line-height: 1;
+        }
+
+        .requirement-met {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .requirement-not-met {
+            background: #f44336;
+            color: white;
+        }
+
+        .requirement-zero {
+            color: #f44336;
+            font-weight: 600;
+            background: none;
+        }
+
+        .requirement-over {
+            color: #f44336;
+            font-weight: 600;
+            background: none;
+        }
+
+        .requirement-normal {
+            color: #333;
+            font-weight: 500;
+            background: none;
+        }
+
+        .manual-skill-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .manual-input-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .manual-input-group label {
+            font-weight: bold;
+            min-width: 80px;
+        }
+
+        /* タブレット対応 */
+        @media (max-width: 1024px) {
+            .container {
+                padding: 10px;
+                max-width: 100%;
+            }
+
+            h1 {
+                font-size: 22px;
+                margin-bottom: 16px;
+            }
+
+            .tab-button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+
+            .skill-input {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+
+            .score-breakdown {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+        }
+
+        /* スマートフォン対応 (Portrait) */
+        @media (max-width: 900px) {
+            body {
+                font-size: 14px;
+            }
+
+            .container {
+                padding: 8px;
+                max-width: 100%;
+                margin: 0;
+            }
+
+            h1 {
+                font-size: 20px;
+                margin-bottom: 12px;
+                text-align: center;
+                padding: 0 10px;
+            }
+
+            /* 2列レイアウトを1列に変更 */
+            .apparatus-content {
+                display: block;
+                gap: 0;
+            }
+
+            .right-panel {
+                margin-top: 15px;
+            }
+
+            /* タブの改善 */
+            .apparatus-tabs {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+                margin-bottom: 15px;
+                padding: 0 5px;
+            }
+
+            .tab-button {
+                padding: 12px 4px;
+                font-size: 11px;
+                white-space: nowrap;
+                min-height: 50px;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(255,255,255,0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                text-align: center;
+            }
+
+            /* 技入力の改善 */
+            .skill-input-group {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 8px;
+                margin-bottom: 10px;
+                padding: 8px;
+                background: #f8f9fa;
+                border-radius: 8px;
+                border: 1px solid #dee2e6;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                position: relative;
+            }
+
+            .skill-number {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+
+            .skill-input {
+                flex: 1;
+                padding: 12px;
+                font-size: 16px;
+                border: 2px solid #ddd;
+                border-radius: 6px;
+                box-sizing: border-box;
+                -webkit-appearance: none;
+                min-height: 44px;
+            }
+
+            .skill-input:focus {
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+
+            .skill-info {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                flex-shrink: 0;
+            }
+
+            .eg-badge, .difficulty-badge {
+                padding: 4px 8px;
+                font-size: 11px;
+                min-width: 24px;
+                border-radius: 4px;
+                white-space: nowrap;
+            }
+
+            .remove-skill {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+                flex-shrink: 0;
+            }
+
+            /* コントロールボタンの改善 */
+            .history-controls {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+                margin-bottom: 15px;
+                padding: 0 5px;
+            }
+
+            .history-controls button {
+                padding: 14px 8px;
+                font-size: 12px;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+                border-radius: 8px;
+                min-height: 48px;
+                white-space: nowrap;
+            }
+
+            .add-skill-button {
+                width: 100%;
+                padding: 16px;
+                font-size: 16px;
+                margin: 15px 0;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+                border-radius: 8px;
+                min-height: 48px;
+            }
+
+            /* スコア表示の改善 */
+            .score-breakdown {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+
+            .score-item {
+                padding: 8px;
+            }
+
+            .score-item h3 {
+                font-size: 12px;
+                margin-bottom: 4px;
+            }
+
+            .score-value {
+                font-size: 16px;
+                min-height: 24px;
+            }
+
+            .score-input input {
+                width: 80px !important;
+                padding: 8px !important;
+                font-size: 14px !important;
+            }
+
+            /* 種目別スコア表示の改善 */
+            #apparatus-summary {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 8px;
+                padding: 0 5px;
+            }
+
+            /* 跳馬手動入力の改善 */
+            .manual-input-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .manual-input-group label {
+                font-size: 14px;
+                font-weight: bold;
+                margin-bottom: 4px;
+            }
+
+            .manual-input-group input {
+                padding: 16px;
+                font-size: 16px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                -webkit-appearance: none;
+                min-height: 48px;
+            }
+
+            /* オートコンプリートの改善 */
+            .autocomplete-dropdown {
+                font-size: 14px;
+                max-height: 200px;
+                border-radius: 8px;
+                z-index: 10000;
+                position: absolute;
+                top: 48px !important;
+                left: 0 !important;
+                width: 100% !important;
+                border: 2px solid #667eea;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+
+            .autocomplete-item {
+                padding: 12px 16px;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+                min-height: 48px;
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+            }
+        }
+
+        /* 小さなスマートフォン対応 */
+        @media (max-width: 480px) {
+            .container {
+                padding: 5px;
+            }
+
+            h1 {
+                font-size: 18px;
+                padding: 0 5px;
+            }
+
+            .apparatus-tabs {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 4px;
+                padding: 0 2px;
+            }
+
+            .tab-button {
+                padding: 10px 2px;
+                font-size: 10px;
+                min-height: 44px;
+            }
+
+            .history-controls {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+
+            .history-controls button {
+                font-size: 11px;
+                padding: 12px;
+                min-height: 44px;
+            }
+
+            .skill-input-group {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+                gap: 6px;
+                padding: 6px;
+                margin-bottom: 8px;
+                position: relative;
+            }
+
+            .autocomplete-dropdown {
+                width: 100% !important;
+            }
+        }
+
+        /* 大画面対応 */
+        @media (min-width: 1400px) {
+            .container {
+                max-width: 1800px;
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 28px;
+                margin-bottom: 20px;
+            }
+
+            .apparatus-content {
+                gap: 20px;
+            }
+
+            .skill-input-group {
+                margin-bottom: 8px;
+                position: relative;
+            }
+
+            .score-breakdown {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+        }
+        
+        /* モバイル端末用の強制CSS - 複数セレクタで確実に適用 */
+        .mobile-device .skill-input-group,
+        body.mobile-device .skill-input-group,
+        [class*="mobile"] .skill-input-group {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 2px !important;
+            margin-bottom: 6px !important;
+            padding: 4px !important;
+            background: #f8f9fa !important;
+            border-radius: 4px !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+            position: relative !important;
+            min-height: 36px !important;
+            max-width: 100vw !important;
+            overflow: hidden !important;
+        }
+        
+        .mobile-device .skill-number,
+        body.mobile-device .skill-number,
+        [class*="mobile"] .skill-number {
+            width: 24px !important;
+            height: 24px !important;
+            font-size: 10px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .mobile-device .skill-input,
+        body.mobile-device .skill-input,
+        [class*="mobile"] .skill-input {
+            flex: 1 !important;
+            padding: 6px !important;
+            font-size: 12px !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            box-sizing: border-box !important;
+            -webkit-appearance: none !important;
+            min-height: 32px !important;
+            max-width: calc(100vw - 140px) !important;
+        }
+        
+        .mobile-device .skill-info,
+        body.mobile-device .skill-info,
+        [class*="mobile"] .skill-info {
+            display: flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            flex-shrink: 0 !important;
+        }
+        
+        .mobile-device .eg-badge, 
+        .mobile-device .difficulty-badge,
+        body.mobile-device .eg-badge,
+        body.mobile-device .difficulty-badge,
+        [class*="mobile"] .eg-badge,
+        [class*="mobile"] .difficulty-badge {
+            padding: 2px 4px !important;
+            font-size: 10px !important;
+            min-width: 18px !important;
+            border-radius: 3px !important;
+            white-space: nowrap !important;
+            line-height: 1.2 !important;
+        }
+        
+        .mobile-device .remove-skill,
+        body.mobile-device .remove-skill,
+        [class*="mobile"] .remove-skill {
+            width: 24px !important;
+            height: 24px !important;
+            font-size: 12px !important;
+            flex-shrink: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* 画面幅による直接的な強制適用 */
+        @media (max-width: 900px) and (pointer: coarse) {
+            .skill-input-group {
+                display: flex !important;
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 8px !important;
+                margin-bottom: 10px !important;
+                padding: 8px !important;
+            }
+        }
+        
+        /* スマホ縦向き（ポートレート）専用 - より厳しいサイズ制限 */
+        @media (max-width: 480px) and (orientation: portrait) {
+            .mobile-device .skill-input,
+            body.mobile-device .skill-input,
+            [class*="mobile"] .skill-input {
+                font-size: 11px !important;
+                padding: 4px !important;
+                min-height: 28px !important;
+                max-width: calc(100vw - 120px) !important;
+            }
+            
+            .mobile-device .skill-number,
+            body.mobile-device .skill-number,
+            [class*="mobile"] .skill-number {
+                width: 20px !important;
+                height: 20px !important;
+                font-size: 9px !important;
+            }
+            
+            .mobile-device .eg-badge, 
+            .mobile-device .difficulty-badge,
+            body.mobile-device .eg-badge,
+            body.mobile-device .difficulty-badge,
+            [class*="mobile"] .eg-badge,
+            [class*="mobile"] .difficulty-badge {
+                padding: 1px 3px !important;
+                font-size: 9px !important;
+                min-width: 16px !important;
+                border-radius: 2px !important;
+            }
+            
+            .mobile-device .remove-skill,
+            body.mobile-device .remove-skill,
+            [class*="mobile"] .remove-skill {
+                width: 20px !important;
+                height: 20px !important;
+                font-size: 10px !important;
+            }
+            
+            .mobile-device .skill-input-group,
+            body.mobile-device .skill-input-group,
+            [class*="mobile"] .skill-input-group {
+                gap: 1px !important;
+                padding: 3px !important;
+                margin-bottom: 4px !important;
+                min-height: 32px !important;
+            }
+            
+            .mobile-device .skill-info,
+            body.mobile-device .skill-info,
+            [class*="mobile"] .skill-info {
+                gap: 2px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>体操競技 Dスコア計算システム</h1>
+<div style="text-align: center; margin-bottom: 12px;">            <a href="index.html" style="display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500; transition: transform 0.2s;">← 性別選択に戻る</a>        </div>
+        
+        <div class="history-controls" style="text-align: center; margin-bottom: 20px;">
+            <button onclick="showHelpDialog()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; font-size: 12px; min-height: 36px;">❓ ヘルプ</button>
+            <button id="undo-btn" onclick="historyManager.undo()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #6c757d; color: white; cursor: pointer; font-size: 12px; min-height: 36px;" disabled>← 元に戻す (Ctrl+Z)</button>
+            <button id="redo-btn" onclick="historyManager.redo()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #6c757d; color: white; cursor: pointer; font-size: 12px; min-height: 36px;" disabled>やり直し (Ctrl+Y) →</button>
+            <button id="reset-btn" onclick="confirmReset()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #dc3545; color: white; cursor: pointer; font-size: 12px; min-height: 36px;">リセット</button>
+            <button onclick="clearStoredData()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #ffc107; color: #212529; cursor: pointer; font-size: 12px; min-height: 36px;">保存データ削除</button>
+            <button id="report-btn" onclick="showReportDialog()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #28a745; color: white; cursor: pointer; font-size: 12px; min-height: 36px;">📊 レポート生成</button>
+            <div id="history-info" style="margin-top: 12px; font-size: 13px; color: #666;">履歴なし</div>
+            <div id="storage-info" style="margin-top: 6px; font-size: 11px; color: #999;">リロード後も入力が維持されます</div>
+        </div>
+
+        <!-- 種目別・総合スコア表示 -->
+        <div style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 8px; border-radius: 4px; margin-bottom: 12px;">
+            <div style="display: flex; gap: 6px; font-size: 0.65em; align-items: center; justify-content: center;">
+                <div id="apparatus-summary" style="display: flex; gap: 4px;">
+                    <!-- 種目別スコアがここに表示される -->
+                </div>
+                <div style="background: linear-gradient(135deg, #ffc107 0%, #ff8c00 100%); color: #333; padding: 4px 6px; border-radius: 3px; border: 2px solid rgba(255,255,255,0.8); text-align: center; min-width: 70px;">
+                    <div style="font-weight: bold; margin-bottom: 1px; font-size: 0.9em;">総合</div>
+                    <div style="display: flex; gap: 3px; justify-content: center; margin-bottom: 1px; font-size: 0.75em;">
+                        <span>D<strong id="total-d-score">0.0</strong></span>
+                        <span>E<strong id="total-e-score">51.0</strong></span>
+                        <span>ND<strong id="total-nd">0.0</strong></span>
+                    </div>
+                    <div style="font-size: 1em; font-weight: bold; padding: 1px 3px; background: rgba(255,255,255,0.3); border-radius: 2px;">
+                        <span id="total-target-score">51.0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="apparatus-tabs">
+            <button class="tab-button active" onclick="switchApparatus('FX')">ゆか (FX)</button>
+            <button class="tab-button" onclick="switchApparatus('PH')">あん馬 (PH)</button>
+            <button class="tab-button" onclick="switchApparatus('SR')">つり輪 (SR)</button>
+            <button class="tab-button" onclick="switchApparatus('VT')">跳馬 (VT)</button>
+            <button class="tab-button" onclick="switchApparatus('PB')">平行棒 (PB)</button>
+            <button class="tab-button" onclick="switchApparatus('HB')">鉄棒 (HB)</button>
+        </div>
+
+        <div id="FX" class="apparatus-section active">
+            <h2>ゆか (Floor Exercise)</h2>
+            <div class="apparatus-content">
+                <div class="left-panel">
+                    <div class="skill-input-section" id="fx-skills">
+                        <!-- Skills will be added dynamically -->
+                    </div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button class="add-skill-button" onclick="addSkillInput('FX')">技を追加</button>
+                        <button class="add-a-skill-button" onclick="addASkill('FX')" style="background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px;" title="a難度、グループなしの技を追加">a</button>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-display">
+                        <h2>Dスコア: <span id="fx-total-score">0.0</span></h2>
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <h3>難度点</h3>
+                                <div class="score-value" id="fx-difficulty-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>グループ点</h3>
+                                <div class="score-value" id="fx-group-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>組み合わせ加点</h3>
+                                <div class="score-input">
+                                    <input type="number" id="fx-connection-input" step="0.1" min="0" max="0.4" value="0" onchange="calculateScore('FX')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>目標Eスコア</h3>
+                                <div class="score-input">
+                                    <input type="number" id="fx-e-score-input" step="0.1" min="0" max="10" value="8.0" onchange="calculateScore('FX')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>技数ND</h3>
+                                <div class="score-value" id="fx-skill-nd" style="color: #f44336;">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>その他ND</h3>
+                                <div class="score-input">
+                                    <input type="number" id="fx-other-nd-input" step="0.1" min="0" value="0.3" onchange="calculateScore('FX')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item" style="grid-column: span 2; background: #28a745; color: white; border-radius: 4px; margin-top: 5px;">
+                                <h3>目標点</h3>
+                                <div class="score-value" id="fx-target-score" style="font-size: 16px; font-weight: bold;">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="requirements-check">
+                        <h3>要求項目チェック</h3>
+                        <div id="fx-requirements">
+                            <!-- Requirements will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="PH" class="apparatus-section">
+            <h2>あん馬 (Pommel Horse)</h2>
+            <div class="apparatus-content">
+                <div class="left-panel">
+                    <div class="skill-input-section" id="ph-skills"></div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button class="add-skill-button" onclick="addSkillInput('PH')">技を追加</button>
+                        <button class="add-a-skill-button" onclick="addASkill('PH')" style="background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px;" title="a難度、グループなしの技を追加">a</button>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-display">
+                        <h2>Dスコア: <span id="ph-total-score">0.0</span></h2>
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <h3>難度点</h3>
+                                <div class="score-value" id="ph-difficulty-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>グループ点</h3>
+                                <div class="score-value" id="ph-group-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>目標Eスコア</h3>
+                                <div class="score-input">
+                                    <input type="number" id="ph-e-score-input" step="0.1" min="0" max="10" value="8.0" onchange="calculateScore('PH')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>技数ND</h3>
+                                <div class="score-value" id="ph-skill-nd" style="color: #f44336;">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>その他ND</h3>
+                                <div class="score-input">
+                                    <input type="number" id="ph-other-nd-input" step="0.1" min="0" value="0" onchange="calculateScore('PH')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item" style="grid-column: span 2; background: #28a745; color: white; border-radius: 4px; margin-top: 5px;">
+                                <h3>目標点</h3>
+                                <div class="score-value" id="ph-target-score" style="font-size: 16px; font-weight: bold;">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="requirements-check">
+                        <h3>要求項目チェック</h3>
+                        <div id="ph-requirements">
+                            <!-- Requirements will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="SR" class="apparatus-section">
+            <h2>つり輪 (Still Rings)</h2>
+            <div class="apparatus-content">
+                <div class="left-panel">
+                    <div class="skill-input-section" id="sr-skills"></div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button class="add-skill-button" onclick="addSkillInput('SR')">技を追加</button>
+                        <button class="add-a-skill-button" onclick="addASkill('SR')" style="background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px;" title="a難度、グループなしの技を追加">a</button>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-display">
+                        <h2>Dスコア: <span id="sr-total-score">0.0</span></h2>
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <h3>難度点</h3>
+                                <div class="score-value" id="sr-difficulty-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>グループ点</h3>
+                                <div class="score-value" id="sr-group-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>目標Eスコア</h3>
+                                <div class="score-input">
+                                    <input type="number" id="sr-e-score-input" step="0.1" min="0" max="10" value="8.0" onchange="calculateScore('SR')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>技数ND</h3>
+                                <div class="score-value" id="sr-skill-nd" style="color: #f44336;">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>その他ND</h3>
+                                <div class="score-input">
+                                    <input type="number" id="sr-other-nd-input" step="0.1" min="0" value="0" onchange="calculateScore('SR')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item" style="grid-column: span 2; background: #28a745; color: white; border-radius: 4px; margin-top: 5px;">
+                                <h3>目標点</h3>
+                                <div class="score-value" id="sr-target-score" style="font-size: 16px; font-weight: bold;">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="requirements-check">
+                        <h3>要求項目チェック</h3>
+                        <div id="sr-requirements">
+                            <!-- Requirements will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="VT" class="apparatus-section">
+            <h2>跳馬 (Vault)</h2>
+            <div class="apparatus-content">
+                <div class="left-panel">
+                    <div class="skill-input-section" id="vt-skills">
+                        <div class="skill-input-group manual-input">
+                            <div class="skill-number">1</div>
+                            <div class="manual-skill-container">
+                                <div class="manual-input-group">
+                                    <label>技名:</label>
+                                    <input type="text" id="vt-skill-name" placeholder="跳馬技名を入力..." style="flex: 1; padding: 8px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; min-height: 32px;">
+                                </div>
+                                <div class="manual-input-group">
+                                    <label>Dスコア:</label>
+                                    <input type="number" id="vt-d-score" step="0.1" min="0" max="10" placeholder="0.0" style="width: 80px; padding: 8px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; min-height: 32px;" onchange="calculateVaultScore()">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-display">
+                        <h2>Dスコア: <span id="vt-total-score">0.0</span></h2>
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <h3>跳馬Dスコア</h3>
+                                <div class="score-value" id="vt-vault-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>目標Eスコア</h3>
+                                <div class="score-input">
+                                    <input type="number" id="vt-e-score-input" step="0.1" min="0" max="10" value="8.0" onchange="calculateVaultScore()" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>その他ND</h3>
+                                <div class="score-input">
+                                    <input type="number" id="vt-other-nd-input" step="0.1" min="0" value="0" onchange="calculateVaultScore()" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item" style="grid-column: span 2; background: #28a745; color: white; border-radius: 4px; margin-top: 5px;">
+                                <h3>目標点</h3>
+                                <div class="score-value" id="vt-target-score" style="font-size: 16px; font-weight: bold;">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="requirements-check">
+                        <h3>跳馬について</h3>
+                        <div id="vt-requirements">
+                            <p>跳馬のDスコアは技名とスコアを手動で入力してください。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="PB" class="apparatus-section">
+            <h2>平行棒 (Parallel Bars)</h2>
+            <div class="apparatus-content">
+                <div class="left-panel">
+                    <div class="skill-input-section" id="pb-skills"></div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button class="add-skill-button" onclick="addSkillInput('PB')">技を追加</button>
+                        <button class="add-a-skill-button" onclick="addASkill('PB')" style="background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px;" title="a難度、グループなしの技を追加">a</button>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-display">
+                        <h2>Dスコア: <span id="pb-total-score">0.0</span></h2>
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <h3>難度点</h3>
+                                <div class="score-value" id="pb-difficulty-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>グループ点</h3>
+                                <div class="score-value" id="pb-group-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>目標Eスコア</h3>
+                                <div class="score-input">
+                                    <input type="number" id="pb-e-score-input" step="0.1" min="0" max="10" value="8.0" onchange="calculateScore('PB')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>技数ND</h3>
+                                <div class="score-value" id="pb-skill-nd" style="color: #f44336;">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>その他ND</h3>
+                                <div class="score-input">
+                                    <input type="number" id="pb-other-nd-input" step="0.1" min="0" value="0" onchange="calculateScore('PB')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item" style="grid-column: span 2; background: #28a745; color: white; border-radius: 4px; margin-top: 5px;">
+                                <h3>目標点</h3>
+                                <div class="score-value" id="pb-target-score" style="font-size: 16px; font-weight: bold;">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="requirements-check">
+                        <h3>要求項目チェック</h3>
+                        <div id="pb-requirements">
+                            <!-- Requirements will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="HB" class="apparatus-section">
+            <h2>鉄棒 (High Bar)</h2>
+            <div class="apparatus-content">
+                <div class="left-panel">
+                    <div class="skill-input-section" id="hb-skills"></div>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <button class="add-skill-button" onclick="addSkillInput('HB')">技を追加</button>
+                        <button class="add-a-skill-button" onclick="addASkill('HB')" style="background: #ff9800; color: white; border: none; padding: 8px 12px; border-radius: 16px; font-size: 14px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 12px;" title="a難度、グループなしの技を追加">a</button>
+                    </div>
+                </div>
+                
+                <div class="right-panel">
+                    <div class="score-display">
+                        <h2>Dスコア: <span id="hb-total-score">0.0</span></h2>
+                        <div class="score-breakdown">
+                            <div class="score-item">
+                                <h3>難度点</h3>
+                                <div class="score-value" id="hb-difficulty-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>グループ点</h3>
+                                <div class="score-value" id="hb-group-score">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>組み合わせ加点</h3>
+                                <div class="score-input">
+                                    <input type="number" id="hb-connection-input" step="0.1" min="0" max="0.5" value="0" onchange="calculateScore('HB')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>目標Eスコア</h3>
+                                <div class="score-input">
+                                    <input type="number" id="hb-e-score-input" step="0.1" min="0" max="10" value="8.0" onchange="calculateScore('HB')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item">
+                                <h3>技数ND</h3>
+                                <div class="score-value" id="hb-skill-nd" style="color: #f44336;">0.0</div>
+                            </div>
+                            <div class="score-item">
+                                <h3>その他ND</h3>
+                                <div class="score-input">
+                                    <input type="number" id="hb-other-nd-input" step="0.1" min="0" value="0" onchange="calculateScore('HB')" style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; min-height: 32px;">
+                                </div>
+                            </div>
+                            <div class="score-item" style="grid-column: span 2; background: #28a745; color: white; border-radius: 4px; margin-top: 5px;">
+                                <h3>目標点</h3>
+                                <div class="score-value" id="hb-target-score" style="font-size: 16px; font-weight: bold;">0.0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="requirements-check">
+                        <h3>要求項目チェック</h3>
+                        <div id="hb-requirements">
+                            <!-- Requirements will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- レポート設定ダイアログ -->
+    <div id="report-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 20px; border-radius: 10px; width: 90vw; max-width: 1200px; max-height: 90vh; overflow-y: auto;">
+            <h3 style="margin-top: 0; text-align: center;">レポート設定とプレビュー</h3>
+            <div style="display: grid; grid-template-columns: 300px 1fr; gap: 20px;">
+                <div style="min-width: 280px;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">タイトル:</label>
+                        <input type="text" id="report-title" placeholder="大会名を入力してください" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;" onchange="updatePreview()" oninput="updatePreview()">
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">氏名:</label>
+                        <input type="text" id="report-name" placeholder="氏名を入力してください" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;" onchange="updatePreview()" oninput="updatePreview()">
+                    </div>
+                    <div style="text-align: center;">
+                        <button onclick="generateReport()" style="padding: 10px 20px; margin: 0 5px 10px 5px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;">レポート生成</button>
+                        <button onclick="closeReportDialog()" style="padding: 10px 20px; margin: 0 5px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%;">キャンセル</button>
+                    </div>
+                </div>
+                <div style="overflow: hidden;">
+                    <h4 style="margin-top: 0; margin-bottom: 10px;">プレビュー</h4>
+                    <div id="report-preview" style="border: 1px solid #ddd; background: white; height: 500px; overflow-y: auto; transform: scale(0.4); transform-origin: top left; width: 250%;">
+                        <!-- プレビュー内容 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ヘルプダイアログ -->
+    <div id="help-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+        <div style="background: white; padding: 15px; border-radius: 8px; width: 90vw; max-width: 500px; max-height: 80vh; overflow-y: auto; font-size: 13px;">
+            <h2 style="margin-top: 0; text-align: center; color: #333; border-bottom: 1px solid #007bff; padding-bottom: 8px; font-size: 16px;">📚 体操競技 Dスコア計算システム</h2>
+            
+            <div style="line-height: 1.4; color: #444;">
+                <h3 style="color: #007bff; margin-bottom: 8px; font-size: 14px;">🎯 このアプリについて</h3>
+                <p style="margin-bottom: 12px;">男子体操競技（6種目）のDスコア計算システムです。</p>
+                
+                <h3 style="color: #007bff; margin-bottom: 8px; font-size: 14px;">📱 主な機能</h3>
+                <ul style="margin-bottom: 12px; padding-left: 18px;">
+                    <li><strong>種目：</strong>ゆか、あん馬、つり輪、跳馬、平行棒、鉄棒</li>
+                    <li><strong>技入力：</strong>技名・難度（A-J）・グループ（Ⅰ-Ⅳ）を手動入力</li>
+                    <li><strong>a技ボタン：</strong>グループなし、難度a（0.1点）の技を追加</li>
+                    <li><strong>技並び替え：</strong>ドラッグ＆ドロップで順序変更</li>
+                    <li><strong>自動計算：</strong>難度点・グループ点・技数NDを自動計算</li>
+                    <li><strong>組み合わせ加点：</strong>ゆかと鉄棒で手動入力可能</li>
+                    <li><strong>跳馬：</strong>技名・技番号・Dスコアを手動入力</li>
+                    <li><strong>目標Eスコア：</strong>各種目で目標E点を設定</li>
+                    <li><strong>その他ND：</strong>手動で減点を追加</li>
+                    <li><strong>履歴機能：</strong>Ctrl+Z/Yで操作の取り消し・やり直し</li>
+                    <li><strong>自動保存：</strong>ブラウザに自動保存（リロード後も復元）</li>
+                    <li><strong>レポート生成：</strong>全種目の結果をPNG画像で保存</li>
+                </ul>
+                
+                <h3 style="color: #007bff; margin-bottom: 8px; font-size: 14px;">📊 計算式</h3>
+                <div style="background: #f8f9fa; padding: 8px; border-radius: 4px; font-family: monospace; margin-bottom: 12px; font-size: 12px;">
+                    Dスコア = 難度点（上位8技） + グループ点（0.5×グループ数） + 組み合わせ加点 - 技数ND - その他ND
+                </div>
+                
+                <p style="font-size: 11px; color: #666; text-align: center; margin-top: 15px;">
+                    2025年FIG男子体操競技採点規則準拠
+                </p>
+                <p style="font-size: 9px; color: #999; text-align: center; margin-top: 10px; line-height: 1.3;">
+                    制作: Kaito-Imadu with Claude Code
+                </p>
+            </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <button onclick="closeHelpDialog()" style="padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- レポート生成用の非表示エリア -->
+    <div id="report-container" style="position: absolute; left: -9999px; top: -9999px; width: 1123px; height: 794px; background: white; box-sizing: border-box; font-family: 'Helvetica Neue', Arial, sans-serif; display: flex; justify-content: center; align-items: flex-start;">
+        <div id="report-content" style="width: 100%; max-width: 100%;">
+            <!-- レポート内容がここに生成される -->
+        </div>
+    </div>
+
+    <!-- 技データ（CORS問題回避のため） -->
+    <script src="floor_skills.js"></script>
+    <script src="pommel_skills.js"></script>
+    <script src="rings_skills.js"></script>
+    <script src="parallel_skills.js"></script>
+    <script src="highbar_skills.js"></script>
+    <script src="skills_database.js"></script>
+    
+    <!-- html2canvas ライブラリ -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <!-- メインスクリプト -->
+    <script src="men_gymnastics_d_score.js?v=1760514000"></script>
+    
+    <script>
+        // レポート内容を作成
+        function createReportContent(title, name) {
+            try {
+                console.log('Starting report creation...');
+                console.log('Title:', title, 'Name:', name);
+                
+                const reportContent = document.getElementById('report-content');
+                if (!reportContent) {
+                    console.error('report-content element not found');
+                    return;
+                }
+                console.log('report-content element found:', reportContent);
+                const now = new Date();
+            const dateStr = now.toLocaleDateString('ja-JP', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+            });
+            const timeStr = now.toLocaleTimeString('ja-JP', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            // 総合スコアを事前に計算
+            const apparatusNames = {
+                'FX': 'ゆか',
+                'PH': 'あん馬', 
+                'SR': 'つり輪',
+                'VT': '跳馬',
+                'PB': '平行棒',
+                'HB': '鉄棒'
+            };
+            
+            let totalDScore = 0, totalEScore = 0, totalND = 0;
+            Object.keys(apparatusNames).forEach(apparatus => {
+                const scores = calculateReportScores(apparatus);
+                totalDScore += parseFloat(scores.total);
+                totalEScore += parseFloat(scores.eScore);
+                totalND += parseFloat(scores.skillND) + parseFloat(scores.otherND);
+            });
+            const totalTargetScore = totalDScore + totalEScore - totalND;
+            
+            let html = `
+                <div style="position: relative; height: 100%;">
+                    <!-- ヘッダー -->
+                    <div style="text-align: center; margin-bottom: 20px; position: relative;">
+                        <h1 style="font-size: 20px; margin: 0 0 8px 0; color: #333;">${title}</h1>
+                        <p style="font-size: 16px; margin: 0; color: #666;">氏名: ${name}</p>
+                        <div style="position: absolute; top: 0; right: 0; font-size: 11px; color: #999;">
+                            作成日: ${dateStr} ${timeStr}
+                        </div>
+                        
+                        <!-- 総合スコア（作成日の下、横並び） -->
+                        <div style="display: flex; justify-content: center; gap: 8px; align-items: center; margin-top: 8px; font-size: 12px; color: #333;">
+                            <span style="font-weight: bold;">総合スコア:</span>
+                            <span style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; border: 1px solid #dee2e6;">D${totalDScore.toFixed(1)}</span>
+                            <span style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; border: 1px solid #dee2e6;">E${totalEScore.toFixed(1)}</span>
+                            <span style="background: #f8f9fa; padding: 2px 6px; border-radius: 3px; border: 1px solid #dee2e6; color: #dc3545;">ND${totalND.toFixed(1)}</span>
+                            <span style="background: #fff3cd; padding: 2px 8px; border-radius: 3px; border: 1px solid #ffeaa7; font-weight: bold;">${totalTargetScore.toFixed(1)}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; height: calc(100% - 200px);">
+            `;
+            
+            Object.keys(apparatusNames).forEach(apparatus => {
+                const routine = currentRoutines[apparatus];
+                const scores = calculateReportScores(apparatus);
+                
+                html += `
+                    <div style="border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: #fafafa; height: fit-content;">
+                        <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #333; border-bottom: 1px solid #667eea; padding-bottom: 3px;">
+                            ${apparatusNames[apparatus]} (${apparatus})
+                        </h3>
+                        
+                        <!-- 技一覧 -->
+                        <div style="margin-bottom: 10px;">
+                            <h4 style="font-size: 10px; margin: 0 0 6px 0; color: #555;">技一覧</h4>
+                            <div style="font-size: 8px;">
+                `;
+                
+                if (routine.length > 0) {
+                    routine.forEach((skill, index) => {
+                        if (skill.name) {
+                            const eg = skill.elementGroup || skill.eg || '-';
+                            const difficulty = skill.difficulty || '-';
+                            html += `
+                                <div style="display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 1px solid #eee;">
+                                    <span>${index + 1}. ${skill.name}</span>
+                                    <span>EG:${eg} ${difficulty}難度</span>
+                                </div>
+                            `;
+                        }
+                    });
+                } else {
+                    html += '<div style="color: #999; font-style: italic;">技が入力されていません</div>';
+                }
+                
+                html += `
+                            </div>
+                        </div>
+                        
+                        <!-- スコア詳細 -->
+                        <div style="font-size: 9px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 6px;">
+                                <div>難度点: <strong>${scores.difficulty}</strong></div>
+                                <div>グループ点: <strong>${scores.group}</strong></div>
+                                ${apparatus === 'FX' || apparatus === 'HB' ? `<div>組合せ加点: <strong>${scores.connection}</strong></div>` : ''}
+                                <div>目標E: <strong>${scores.eScore}</strong></div>
+                                <div style="color: #dc3545;">技数ND: <strong>-${scores.skillND}</strong></div>
+                                <div style="color: #dc3545;">その他ND: <strong>-${scores.otherND}</strong></div>
+                            </div>
+                            <div style="text-align: center; padding: 4px; background: #667eea; color: white; border-radius: 3px; font-weight: bold; margin-bottom: 4px; font-size: 10px;">
+                                Dスコア: ${scores.total}
+                            </div>
+                            <div style="text-align: center; padding: 5px; background: #28a745; color: white; border-radius: 3px; font-weight: bold; font-size: 11px;">
+                                目標点: ${scores.target}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // 総合スコア追加
+            let totalDScore = 0, totalEScore = 0, totalND = 0;
+            Object.keys(apparatusNames).forEach(apparatus => {
+                const scores = calculateReportScores(apparatus);
+                totalDScore += parseFloat(scores.total);
+                totalEScore += parseFloat(scores.eScore);
+                totalND += parseFloat(scores.skillND) + parseFloat(scores.otherND);
+            });
+            const totalTargetScore = totalDScore + totalEScore - totalND;
+            
+            html += `
+                    </div>
+                    
+                </div>
+            `;
+            
+            reportContent.innerHTML = html;
+            console.log('Report creation completed successfully');
+            } catch (error) {
+                console.error('Error in createReportContent:', error);
+                alert('レポート作成中にエラーが発生しました: ' + error.message);
+            }
+        }
+        
+        // グローバルスコープにバインド
+        window.createReportContent = createReportContent;
+        
+        // レポート用スコア計算
+        function calculateReportScores(apparatus) {
+            const routine = currentRoutines[apparatus];
+            const difficultyValues = {
+                'A': 0.1, 'B': 0.2, 'C': 0.3, 'D': 0.4, 'E': 0.5, 'F': 0.6, 'G': 0.7, 'H': 0.8, 'I': 0.9, 'J': 1.0
+            };
+            
+            if (apparatus === 'VT') {
+                // 跳馬の場合
+                const vaultScore = routine.length > 0 ? (routine[0].value || 0) : 0;
+                const eScoreInput = document.getElementById('vt-e-score-input');
+                const eScore = eScoreInput ? parseFloat(eScoreInput.value) || 8.5 : 8.5;
+                const otherNDInput = document.getElementById('vt-other-nd-input');
+                const otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
+                const totalScore = vaultScore;
+                const targetScore = Math.max(0, totalScore + eScore - otherND);
+                
+                return {
+                    difficulty: vaultScore.toFixed(1),
+                    group: '0.0',
+                    connection: '0.0',
+                    eScore: eScore.toFixed(1),
+                    skillND: '0.0',
+                    otherND: otherND.toFixed(1),
+                    total: totalScore.toFixed(1),
+                    target: targetScore.toFixed(1)
+                };
+            }
+            
+            const validSkills = routine.filter(skill => skill.name && skill.difficulty);
+            
+            // 難度点計算
+            const dismountSkill = validSkills.length > 0 ? validSkills[validSkills.length - 1] : null;
+            const nonDismountSkills = validSkills.slice(0, -1);
+            const sortedNonDismountValues = nonDismountSkills
+                .map(skill => difficultyValues[skill.difficulty] || 0)
+                .sort((a, b) => b - a)
+                .slice(0, 7);
+            const dismountValue = dismountSkill ? (difficultyValues[dismountSkill.difficulty] || 0) : 0;
+            const difficultyScore = [...sortedNonDismountValues, dismountValue].reduce((sum, val) => sum + val, 0);
+            
+            // グループ点計算
+            const groupScore = calculateGroupScore(validSkills, apparatus);
+            
+            // 組み合わせ加点
+            let connectionScore = 0;
+            if (apparatus === 'FX' || apparatus === 'HB') {
+                const connectionInput = document.getElementById(`${apparatus.toLowerCase()}-connection-input`);
+                connectionScore = connectionInput ? parseFloat(connectionInput.value) || 0 : 0;
+            }
+            
+            // Eスコア取得
+            const eScoreInput = document.getElementById(`${apparatus.toLowerCase()}-e-score-input`);
+            const eScore = eScoreInput ? parseFloat(eScoreInput.value) || 8.5 : 8.5;
+            
+            // 技数ND
+            const skillCount = validSkills.length;
+            let skillND = 0;
+            if (skillCount >= 6) skillND = 0.0;
+            else if (skillCount === 5) skillND = 3.0;
+            else if (skillCount === 4) skillND = 4.0;
+            else if (skillCount === 3) skillND = 5.0;
+            else if (skillCount === 2) skillND = 6.0;
+            else if (skillCount === 1) skillND = 7.0;
+            else skillND = 10.0;
+            
+            // その他ND
+            const otherNDInput = document.getElementById(`${apparatus.toLowerCase()}-other-nd-input`);
+            const otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
+            
+            const totalScore = difficultyScore + groupScore + connectionScore;
+            const targetScore = Math.max(0, totalScore + eScore - skillND - otherND);
+            
+            return {
+                difficulty: difficultyScore.toFixed(1),
+                group: groupScore.toFixed(1),
+                connection: connectionScore.toFixed(1),
+                eScore: eScore.toFixed(1),
+                skillND: skillND.toFixed(1),
+                otherND: otherND.toFixed(1),
+                total: totalScore.toFixed(1),
+                target: targetScore.toFixed(1)
+            };
+        }
+        
+        // グローバルスコープにバインド
+        window.calculateReportScores = calculateReportScores;
+        
+        // モバイル判定とUI調整
+        function initializeMobileUI() {
+            // より強力なモバイル判定
+            const userAgent = navigator.userAgent;
+            const isMobileUA = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Tablet/i.test(userAgent);
+            const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            const isSmallScreen = window.innerWidth <= 900 || window.screen.width <= 900;
+            const isMobileOS = /Mobi|Android/i.test(userAgent);
+            
+            const isMobile = isMobileUA || (hasTouchScreen && isSmallScreen) || isMobileOS;
+            
+            // デバッグ情報を画面に表示
+            const debugInfo = document.createElement('div');
+            debugInfo.id = 'mobile-debug';
+            debugInfo.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(0,0,0,0.8);color:white;padding:10px;font-size:12px;z-index:99999;border-radius:5px;max-width:250px;';
+            debugInfo.innerHTML = `
+                <strong>モバイル判定デバッグ:</strong><br>
+                UA判定: ${isMobileUA}<br>
+                タッチ: ${hasTouchScreen}<br>
+                画面幅: ${window.innerWidth}px<br>
+                スクリーン幅: ${window.screen.width}px<br>
+                小画面: ${isSmallScreen}<br>
+                モバイルOS: ${isMobileOS}<br>
+                <strong>最終判定: ${isMobile}</strong><br>
+                UA: ${userAgent.substring(0, 50)}...
+            `;
+            document.body.appendChild(debugInfo);
+            
+            // 5秒後にデバッグ情報を自動削除
+            setTimeout(() => {
+                if (debugInfo && debugInfo.parentNode) {
+                    debugInfo.parentNode.removeChild(debugInfo);
+                }
+            }, 8000);
+                           
+            console.log('Mobile detection details:', {
+                userAgent,
+                isMobileUA,
+                hasTouchScreen,
+                innerWidth: window.innerWidth,
+                screenWidth: window.screen.width,
+                isSmallScreen,
+                isMobileOS,
+                finalDecision: isMobile
+            });
+            
+            if (isMobile) {
+                // レポートボタンのテキストを変更
+                const reportBtn = document.getElementById('report-btn');
+                if (reportBtn) {
+                    reportBtn.innerHTML = '📷 写真で保存';
+                    reportBtn.style.backgroundColor = '#ff6b35'; // モバイル時は色も変更
+                }
+                
+                // bodyにmobileクラスを追加してCSS適用を確実にする
+                document.body.classList.add('mobile-device');
+                document.body.style.setProperty('--is-mobile', '1');
+                
+                // 強制的にスタイルを適用
+                setTimeout(() => {
+                    const skillGroups = document.querySelectorAll('.skill-input-group');
+                    skillGroups.forEach(group => {
+                        group.style.setProperty('display', 'flex', 'important');
+                        group.style.setProperty('flex-direction', 'row', 'important');
+                        group.style.setProperty('align-items', 'center', 'important');
+                    });
+                }, 100);
+                
+                console.log('Mobile UI initialized with force styling');
+            } else {
+                // デスクトップの場合もデバッグ用に表示
+                document.body.classList.add('desktop-device');
+            }
+        }
+        
+        // ページ読み込み時とリサイズ時に実行
+        window.addEventListener('load', initializeMobileUI);
+        window.addEventListener('resize', initializeMobileUI);
+    </script>
+</body>
+</html>
