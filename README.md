@@ -105,16 +105,82 @@ https://kaito-imadu.github.io/D-score-Calculation/
 
 ## 📱 PWAインストール方法
 
-### iOS (Safari)
-1. Safariでサイトを開く
-2. 共有ボタン → 「ホーム画面に追加」
+ホーム画面やデスクトップに追加することで、アプリのように起動・オフラインでも利用できます。
 
-### Android (Chrome)
-1. Chromeでサイトを開く
-2. メニュー → 「アプリをインストール」
+<details>
+<summary><strong>📱 iOS（iPhone / iPad）</strong></summary>
 
-### PC (Chrome/Edge)
-1. アドレスバー右端のインストールアイコンをクリック
+**Safari を使用してください（Chrome・Firefox 等では追加できません）**
+
+1. **Safari** でサイトを開く
+   → https://kaito-imadu.github.io/D-score-Calculation/
+2. 画面下部の **共有ボタン**（四角に上矢印のアイコン）をタップ
+3. 下にスクロールして **「ホーム画面に追加」** をタップ
+4. 名前を確認して **「追加」** をタップ
+
+ホーム画面にアイコンが追加され、フルスクリーンで起動します。
+
+> **ヒント**: iOS 16.4 以降では通知・バッジなども利用可能です。
+
+</details>
+
+<details>
+<summary><strong>🤖 Android（Chrome）</strong></summary>
+
+1. **Chrome** でサイトを開く
+   → https://kaito-imadu.github.io/D-score-Calculation/
+2. アドレスバー右の **⋮（メニュー）** をタップ
+3. **「アプリをインストール」** または **「ホーム画面に追加」** をタップ
+4. **「インストール」** をタップして確定
+
+ホーム画面とアプリドロワーにアイコンが追加されます。
+
+> **Chrome 以外の場合**: Firefox・Samsung Internet などでも「ホーム画面に追加」メニューが表示される場合があります。
+
+</details>
+
+<details>
+<summary><strong>🪟 Windows（Chrome / Edge）</strong></summary>
+
+**Chrome の場合**
+1. **Chrome** でサイトを開く
+2. アドレスバー右端の **インストールアイコン**（モニターに下矢印）をクリック
+   ※ 表示されない場合: メニュー（⋮）→「Dスコア計算をインストール」
+3. **「インストール」** をクリック
+
+**Edge の場合**
+1. **Edge** でサイトを開く
+2. アドレスバー右端の **アプリアイコン**（＋マーク）をクリック
+   ※ 表示されない場合: メニュー（…）→「アプリ」→「このサイトをアプリとしてインストール」
+3. **「インストール」** をクリック
+
+スタートメニューとデスクトップにショートカットが追加されます。
+
+</details>
+
+<details>
+<summary><strong>🍎 macOS（Chrome / Edge / Safari）</strong></summary>
+
+**Chrome の場合**
+1. **Chrome** でサイトを開く
+2. アドレスバー右端の **インストールアイコン** をクリック
+   ※ 表示されない場合: メニュー（⋮）→「Dスコア計算をインストール」
+3. **「インストール」** をクリック
+
+**Edge の場合**
+1. **Edge** でサイトを開く
+2. メニュー（…）→「アプリ」→「このサイトをアプリとしてインストール」
+3. **「インストール」** をクリック
+
+**Safari（macOS Sonoma 14 以降）の場合**
+1. **Safari** でサイトを開く
+2. メニューバー「ファイル」→「Dock に追加」
+   または共有ボタン → 「Dock に追加」
+3. **「追加」** をクリック
+
+Launchpad / Dock にアイコンが追加されます。
+
+</details>
 
 ## 💾 データ保存
 
