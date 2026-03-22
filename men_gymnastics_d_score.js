@@ -1992,7 +1992,7 @@ function updateRequirements(apparatus, validSkills) {
                     const isChecked = (checkbox1 && checkbox1.checked) || (checkbox2 && checkbox2.checked);
                     return isChecked ? 1 : 0;
                 })() },
-                { name: '最大技数8技', required: 8, actual: Math.min(validSkills.length, 8) },
+                { name: '最大技数8技（7技+終末技）', combined: { main: Math.max(0, validSkills.length - 1), mainLimit: 7, sub: validSkills.length > 0 ? 1 : 0, subLimit: 1 } },
                 // NL1/NL3 追加要求項目
                 { name: 'NL1: アクロバット技で演技開始（不備= -0.3 ND）', manualCheck: 'fx-acro-start-check', stateKey: 'acroStart', checked: fxNLState.acroStart },
                 { name: 'NL1: バランスまたは跳躍技の実施（不備= -0.3 ND）', manualCheck: 'fx-balance-check', stateKey: 'balanceJump', checked: fxNLState.balanceJump },

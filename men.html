@@ -1433,6 +1433,7 @@
         
         <div class="history-controls" style="text-align: center; margin-bottom: 20px;">
             <button onclick="showHelpDialog()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #007bff; color: white; cursor: pointer; font-size: 12px; min-height: 36px;">❓ ヘルプ</button>
+            <button onclick="document.getElementById('install-modal-men').style.display='flex'" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #5a5fd4; color: white; cursor: pointer; font-size: 12px; min-height: 36px;">📲 インストール</button>
             <button id="undo-btn" onclick="historyManager.undo()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #6c757d; color: white; cursor: pointer; font-size: 12px; min-height: 36px;" disabled>← 元に戻す (Ctrl+Z)</button>
             <button id="redo-btn" onclick="historyManager.redo()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #6c757d; color: white; cursor: pointer; font-size: 12px; min-height: 36px;" disabled>やり直し (Ctrl+Y) →</button>
             <button id="reset-btn" onclick="confirmReset()" style="padding: 8px 12px; margin: 0 4px; border: none; border-radius: 6px; background: #dc3545; color: white; cursor: pointer; font-size: 12px; min-height: 36px;">リセット</button>
@@ -1530,6 +1531,30 @@
                         <div id="fx-requirements">
                             <!-- Requirements will be populated dynamically -->
                         </div>
+                        <details style="margin-top:8px; font-size:12px;">
+                            <summary style="cursor:pointer; color:#555; padding:4px 0; user-select:none;">📋 ND一覧（参考）</summary>
+                            <table style="width:100%; border-collapse:collapse; margin-top:6px; font-size:11px;">
+                                <thead>
+                                    <tr style="background:#f0f0f0;">
+                                        <th style="text-align:left; padding:3px 5px; border:1px solid #ddd;">ND項目</th>
+                                        <th style="text-align:center; padding:3px 5px; border:1px solid #ddd; white-space:nowrap;">減点</th>
+                                        <th style="text-align:left; padding:3px 5px; border:1px solid #ddd;">備考</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（5技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−3.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（4技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−4.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（3技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−5.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（2技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−6.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（1技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−7.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">2回/3回宙返り系終末技なし</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−0.3</td><td style="padding:3px 5px; border:1px solid #ddd;">要求項目でチェック</td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">アクロバット技で開始しない</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−0.3</td><td style="padding:3px 5px; border:1px solid #ddd;">NL1</td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">バランス/跳躍技なし</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−0.3</td><td style="padding:3px 5px; border:1px solid #ddd;">NL1</td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">コーナー移動技が同一</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−0.3</td><td style="padding:3px 5px; border:1px solid #ddd;">NL1/NL3 2026〜</td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">その他ND（手動入力）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">任意</td><td style="padding:3px 5px; border:1px solid #ddd;">審判告知NDを入力</td></tr>
+                                </tbody>
+                            </table>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -1642,6 +1667,27 @@
                         <div id="sr-requirements">
                             <!-- Requirements will be populated dynamically -->
                         </div>
+                        <details style="margin-top:8px; font-size:12px;">
+                            <summary style="cursor:pointer; color:#555; padding:4px 0; user-select:none;">📋 ND一覧（参考）</summary>
+                            <table style="width:100%; border-collapse:collapse; margin-top:6px; font-size:11px;">
+                                <thead>
+                                    <tr style="background:#f0f0f0;">
+                                        <th style="text-align:left; padding:3px 5px; border:1px solid #ddd;">ND項目</th>
+                                        <th style="text-align:center; padding:3px 5px; border:1px solid #ddd; white-space:nowrap;">減点</th>
+                                        <th style="text-align:left; padding:3px 5px; border:1px solid #ddd;">備考</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（5技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−3.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（4技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−4.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（3技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−5.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（2技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−6.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND（1技）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−7.0</td><td style="padding:3px 5px; border:1px solid #ddd;"></td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">振動倒立技なし</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">−0.3</td><td style="padding:3px 5px; border:1px solid #ddd;">要求項目でチェック</td></tr>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">その他ND（手動入力）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">任意</td><td style="padding:3px 5px; border:1px solid #ddd;">審判告知NDを入力</td></tr>
+                                </tbody>
+                            </table>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -1700,6 +1746,25 @@
                         <div id="vt-requirements">
                             <p>跳馬のDスコアは技名とスコアを手動で入力してください。</p>
                         </div>
+                        <details style="margin-top:8px; font-size:12px;">
+                            <summary style="cursor:pointer; color:#555; padding:4px 0; user-select:none;">📋 ND一覧（参考）</summary>
+                            <table style="width:100%; border-collapse:collapse; margin-top:6px; font-size:11px;">
+                                <thead>
+                                    <tr style="background:#f0f0f0;">
+                                        <th style="text-align:left; padding:3px 5px; border:1px solid #ddd;">ND項目</th>
+                                        <th style="text-align:center; padding:3px 5px; border:1px solid #ddd; white-space:nowrap;">減点</th>
+                                        <th style="text-align:left; padding:3px 5px; border:1px solid #ddd;">備考</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td style="padding:3px 5px; border:1px solid #ddd;">技数ND</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#555;">なし</td><td style="padding:3px 5px; border:1px solid #ddd;">跳馬は技数NDなし</td></tr>
+                                    <tr style="background:#fafafa;"><td style="padding:3px 5px; border:1px solid #ddd;">その他ND（手動入力）</td><td style="text-align:center; padding:3px 5px; border:1px solid #ddd; color:#c00;">任意</td><td style="padding:3px 5px; border:1px solid #ddd;">審判告知NDを入力</td></tr>
+                                    <tr><td colspan="3" style="padding:4px 5px; border:1px solid #ddd; font-size:10px; color:#666;">
+                                        ※ 跳馬はDスコアを手動入力のため、E審判によるランディングエラー等はE-scoreまたはその他ND欄で対応してください。
+                                    </td></tr>
+                                </tbody>
+                            </table>
+                        </details>
                     </div>
                 </div>
             </div>
@@ -1853,6 +1918,31 @@
         </div>
     </div>
 
+
+    <!-- PWAインストールモーダル -->
+    <div id="install-modal-men" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10001; justify-content:center; align-items:center; padding:16px;" onclick="if(event.target===this)this.style.display='none'">
+        <div style="background:white; border-radius:12px; width:100%; max-width:460px; max-height:85vh; overflow-y:auto; padding:20px; font-size:14px; line-height:1.5; color:#333;">
+            <h2 style="margin:0 0 10px; font-size:17px; text-align:center; color:#5a5fd4; border-bottom:2px solid #667eea; padding-bottom:8px;">📲 アプリとしてインストール</h2>
+            <p style="font-size:12px; color:#666; margin-bottom:12px; text-align:center;">ホーム画面に追加するとオフラインでも利用できます</p>
+            <details style="margin-bottom:6px; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
+                <summary style="padding:10px 12px; cursor:pointer; font-weight:bold; background:#f5f5ff; list-style:none; display:flex; align-items:center; gap:8px;">📱 iOS（iPhone / iPad）</summary>
+                <div style="padding:10px 12px; font-size:13px;"><strong>Safariを使ってください</strong>（Chrome等では追加不可）<ol style="margin:6px 0 0 16px; padding:0;"><li>Safariでこのページを開く</li><li>画面下の<strong>共有ボタン</strong>（□↑）をタップ</li><li>下にスクロールして<strong>「ホーム画面に追加」</strong>をタップ</li><li>名前を確認して<strong>「追加」</strong>をタップ</li></ol><div style="margin-top:8px; padding:6px 8px; background:#fff8e1; border-left:3px solid #ffc107; font-size:12px;">ホーム画面のアイコンからフルスクリーンで起動します</div></div>
+            </details>
+            <details style="margin-bottom:6px; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
+                <summary style="padding:10px 12px; cursor:pointer; font-weight:bold; background:#f5f5ff; list-style:none; display:flex; align-items:center; gap:8px;">🤖 Android（Chrome）</summary>
+                <div style="padding:10px 12px; font-size:13px;"><ol style="margin:0 0 0 16px; padding:0;"><li>Chromeでこのページを開く</li><li>右上の<strong>⋮（メニュー）</strong>をタップ</li><li><strong>「アプリをインストール」</strong>または<strong>「ホーム画面に追加」</strong>をタップ</li><li><strong>「インストール」</strong>で確定</li></ol><div style="margin-top:8px; padding:6px 8px; background:#fff8e1; border-left:3px solid #ffc107; font-size:12px;">ホーム画面とアプリドロワーに追加されます</div></div>
+            </details>
+            <details style="margin-bottom:6px; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
+                <summary style="padding:10px 12px; cursor:pointer; font-weight:bold; background:#f5f5ff; list-style:none; display:flex; align-items:center; gap:8px;">🪟 Windows（Chrome / Edge）</summary>
+                <div style="padding:10px 12px; font-size:13px;"><strong>Chrome：</strong>アドレスバー右端のインストールアイコンをクリック。表示されない場合はメニュー（⋮）→「インストール」<br><strong style="display:block; margin-top:6px;">Edge：</strong>アドレスバー右端の＋アイコン、またはメニュー（…）→「アプリ」→「このサイトをアプリとしてインストール」<div style="margin-top:8px; padding:6px 8px; background:#fff8e1; border-left:3px solid #ffc107; font-size:12px;">スタートメニューとデスクトップにショートカットが追加されます</div></div>
+            </details>
+            <details style="margin-bottom:12px; border:1px solid #e0e0e0; border-radius:8px; overflow:hidden;">
+                <summary style="padding:10px 12px; cursor:pointer; font-weight:bold; background:#f5f5ff; list-style:none; display:flex; align-items:center; gap:8px;">🍎 macOS（Chrome / Edge / Safari）</summary>
+                <div style="padding:10px 12px; font-size:13px;"><strong>Chrome / Edge：</strong>Windowsと同様にアドレスバーのインストールアイコンまたはメニューから<br><strong style="display:block; margin-top:6px;">Safari（macOS Sonoma 14以降）：</strong>メニューバー「ファイル」→「Dockに追加」<div style="margin-top:8px; padding:6px 8px; background:#fff8e1; border-left:3px solid #ffc107; font-size:12px;">LaunchpadまたはDockにアイコンが追加されます</div></div>
+            </details>
+            <button onclick="document.getElementById('install-modal-men').style.display='none'" style="display:block; width:100%; padding:9px; background:#667eea; color:white; border:none; border-radius:8px; font-size:14px; font-weight:bold; cursor:pointer;">閉じる</button>
+        </div>
+    </div>
 
     <!-- ヘルプダイアログ -->
     <div id="help-dialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
