@@ -20,25 +20,8 @@ const currentRoutines = {
 
 let currentApparatus = 'FX';
 
-// FX COMPOSITION ND チェック状態（true = 満たしている = NDなし）
-// deductions.ts の ND_CHECKLIST FX COMPOSITION 6項目に対応
-const fxNLState = {
-    groupIStart: true,       // グループIから開始
-    balanceOrJump: true,     // 片足平均立ち技 / ジャンプ / リープ
-    cornersDiff: true,       // コーナー動きすべて異なる
-    dismount: true,          // 終末技 2回宙 / 3回宙
-    diagonals: true,         // 対角線3回
-    allCorners: true         // すべてのコーナー使用
-};
-
-// FX ND 状態更新関数
-function updateFXNLState(key, checked) {
-    fxNLState[key] = checked;
-    calculateScore('FX');
-}
-
 // SR COMPOSITION ND チェック状態（true = 満たしている = NDなし）
-// deductions.ts の ND_CHECKLIST SR COMPOSITION 1項目に対応
+// 振動から倒立静止技のみ要求項目チェックで管理
 const srNLState = {
     handstand: true          // 振動から倒立静止技
 };
@@ -118,7 +101,6 @@ const storageManager = {
                 connectionScores: connectionScores,
                 otherNDs: otherNDs,
                 eScores: eScores,
-                fxNLState: { ...fxNLState },
                 srNLState: { ...srNLState },
                 timestamp: Date.now()
             };
@@ -215,11 +197,6 @@ const storageManager = {
                     });
                 }
                 
-                // FX ND 状態を復元
-                if (data.fxNLState) {
-                    Object.assign(fxNLState, data.fxNLState);
-                    console.log('Restored fxNLState:', fxNLState);
-                }
                 // SR ND 状態を復元
                 if (data.srNLState) {
                     Object.assign(srNLState, data.srNLState);
@@ -1598,16 +1575,7 @@ function calculateScore(apparatus) {
     const otherNDInput = document.getElementById(`${apparatus.toLowerCase()}-other-nd-input`);
     otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
 
-    // FX COMPOSITION ND（deductions.ts に準拠、各 -0.3）
-    if (apparatus === 'FX') {
-        if (!fxNLState.groupIStart) otherND += 0.3;
-        if (!fxNLState.balanceOrJump) otherND += 0.3;
-        if (!fxNLState.cornersDiff) otherND += 0.3;
-        if (!fxNLState.dismount) otherND += 0.3;
-        if (!fxNLState.diagonals) otherND += 0.3;
-        if (!fxNLState.allCorners) otherND += 0.3;
-    }
-    // SR COMPOSITION ND（deductions.ts に準拠、-0.3）
+    // SR COMPOSITION ND（振動から倒立静止技チェック）
     if (apparatus === 'SR') {
         if (!srNLState.handstand) otherND += 0.3;
     }
@@ -1989,13 +1957,6 @@ function updateRequirements(apparatus, validSkills) {
                 { name: 'EG Ⅲ（後方系の跳躍技）', required: 1, actual: egCounts['Ⅲ'] },
                 { name: 'EG Ⅳ（1回以上のひねりを伴う1回宙返り技）', required: 1, actual: egCounts['Ⅳ'] },
                 { name: '最大技数8技（7技+終末技）', combined: { main: Math.max(0, validSkills.length - 1), mainLimit: 7, sub: validSkills.length > 0 ? 1 : 0, subLimit: 1 } },
-                // COMPOSITION ND チェックボックス（不備 = -0.3 ND、deductions.ts 準拠）
-                { name: 'グループIから開始（不備= -0.3 ND）', manualCheck: 'fx-groupI-check', stateKey: 'groupIStart', checked: fxNLState.groupIStart, state: fxNLState, updateFn: 'updateFXNLState' },
-                { name: '片足平均立ち技 / ジャンプ / リープ（不備= -0.3 ND）', manualCheck: 'fx-balance-check', stateKey: 'balanceOrJump', checked: fxNLState.balanceOrJump, state: fxNLState, updateFn: 'updateFXNLState' },
-                { name: 'コーナー動きすべて異なる（不備= -0.3 ND）', manualCheck: 'fx-corners-check', stateKey: 'cornersDiff', checked: fxNLState.cornersDiff, state: fxNLState, updateFn: 'updateFXNLState' },
-                { name: '終末技 2回宙 / 3回宙（不備= -0.3 ND）', manualCheck: 'fx-dismount-check', stateKey: 'dismount', checked: fxNLState.dismount, state: fxNLState, updateFn: 'updateFXNLState' },
-                { name: '対角線3回（不備= -0.3 ND）', manualCheck: 'fx-diagonals-check', stateKey: 'diagonals', checked: fxNLState.diagonals, state: fxNLState, updateFn: 'updateFXNLState' },
-                { name: 'すべてのコーナー使用（不備= -0.3 ND）', manualCheck: 'fx-allCorners-check', stateKey: 'allCorners', checked: fxNLState.allCorners, state: fxNLState, updateFn: 'updateFXNLState' },
             ];
             break;
         case 'PH': // あん馬
@@ -2438,7 +2399,5 @@ window.switchApparatus = switchApparatus;
 window.removeSkill = removeSkill;
 window.moveSkill = moveSkill;
 window.moveSkillToPosition = moveSkillToPosition;
-window.updateFXNLState = updateFXNLState;
-window.fxNLState = fxNLState;
 window.updateSRNLState = updateSRNLState;
 window.srNLState = srNLState;
