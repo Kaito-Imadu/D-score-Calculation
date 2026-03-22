@@ -20,6 +20,21 @@ const currentRoutines = {
 
 let currentApparatus = 'FX';
 
+// FX NL1/NL3 要求項目チェック状態（true = 満たしている = NDなし）
+// NL1 (2025-08): アクロバット開始・バランス/跳躍実施
+// NL1/NL3 (2026-01-01〜): 各コーナー移動が異なること
+const fxNLState = {
+    acroStart: true,         // NL1: 演技をアクロバット技で開始
+    balanceJump: true,       // NL1: バランスまたは跳躍・跳技の実施
+    cornerTransitions: true  // NL1/NL3: 各コーナー移動が異なること（2026/1/1〜）
+};
+
+// FX NL1/NL3 状態更新関数
+function updateFXNLState(key, checked) {
+    fxNLState[key] = checked;
+    calculateScore('FX');
+}
+
 // ローカルストレージ管理システム
 const storageManager = {
     // データをローカルストレージに保存
@@ -89,6 +104,7 @@ const storageManager = {
                 connectionScores: connectionScores,
                 otherNDs: otherNDs,
                 eScores: eScores,
+                fxNLState: { ...fxNLState },
                 timestamp: Date.now()
             };
             localStorage.setItem('men_gymnastics_d_score_data', JSON.stringify(dataToSave));
@@ -184,6 +200,12 @@ const storageManager = {
                     });
                 }
                 
+                // FX NL1/NL3 状態を復元
+                if (data.fxNLState) {
+                    Object.assign(fxNLState, data.fxNLState);
+                    console.log('Restored fxNLState:', fxNLState);
+                }
+
                 console.log('=== LOAD FROM STORAGE ===');
                 console.log('Vault data loaded:', data.routines?.VT);
                 console.log('Current VT after restore:', currentRoutines.VT);
@@ -1580,7 +1602,14 @@ function calculateScore(apparatus) {
     // その他ND（手動入力）
     const otherNDInput = document.getElementById(`${apparatus.toLowerCase()}-other-nd-input`);
     otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
-    
+
+    // FX NL1/NL3 自動ND（チェックボックスの状態から計算）
+    if (apparatus === 'FX') {
+        if (!fxNLState.acroStart) otherND += 0.3;      // NL1: アクロバット技で開始していない
+        if (!fxNLState.balanceJump) otherND += 0.3;    // NL1: バランス/跳躍技を実施していない
+        if (!fxNLState.cornerTransitions) otherND += 0.3; // NL1/NL3: コーナー移動が重複している
+    }
+
     const totalScore = difficultyScore + groupScore + connectionScore + landingBonus;
     const targetScore = Math.max(0, totalScore + eScore - skillND - otherND);
     
@@ -1716,8 +1745,10 @@ function calculateGroupScore(skills, apparatus) {
                         groupScore += 0.5; // A難度以上で+0.5
                         console.log(`  Added 0.5 for Group I`);
                     } else if (normalizedGroup === 4) {
-                        groupScore += highestValue; // 終末技は難度価値点と同じ
-                        console.log(`  Added ${highestValue} for Group IV (dismount)`);
+                        // NL3 (2026/1/1〜): 終末技EGは難度価値点と同じ、ただし最大0.5
+                        const dismountScore = Math.min(highestValue, 0.5);
+                        groupScore += dismountScore;
+                        console.log(`  Added ${dismountScore} for Group IV (dismount, capped at 0.5 per NL3)`);
                     } else {
                         const score = highestValue >= 0.4 ? 0.5 : 0.3; // D難度以上で+0.5、A-C で+0.3
                         groupScore += score;
@@ -1729,8 +1760,10 @@ function calculateGroupScore(skills, apparatus) {
                         groupScore += 0.5; // A難度以上で+0.5
                         console.log(`  Added 0.5 for Group I`);
                     } else if (normalizedGroup === 4) {
-                        groupScore += highestValue; // 終末技は難度価値点と同じ
-                        console.log(`  Added ${highestValue} for Group IV (dismount)`);
+                        // NL3 (2026/1/1〜): 終末技EGは難度価値点と同じ、ただし最大0.5
+                        const dismountScore = Math.min(highestValue, 0.5);
+                        groupScore += dismountScore;
+                        console.log(`  Added ${dismountScore} for Group IV (dismount, capped at 0.5 per NL3)`);
                     } else {
                         const score = highestValue >= 0.4 ? 0.5 : 0.3; // D難度以上で+0.5、A-C で+0.3
                         groupScore += score;
@@ -1742,8 +1775,10 @@ function calculateGroupScore(skills, apparatus) {
                         groupScore += 0.5; // A難度以上で+0.5
                         console.log(`  Added 0.5 for Group I`);
                     } else if (normalizedGroup === 4) {
-                        groupScore += highestValue; // 終末技は難度価値点と同じ
-                        console.log(`  Added ${highestValue} for Group IV (dismount)`);
+                        // NL3 (2026/1/1〜): 終末技EGは難度価値点と同じ、ただし最大0.5
+                        const dismountScore = Math.min(highestValue, 0.5);
+                        groupScore += dismountScore;
+                        console.log(`  Added ${dismountScore} for Group IV (dismount, capped at 0.5 per NL3)`);
                     } else {
                         const score = highestValue >= 0.4 ? 0.5 : 0.3; // D難度以上で+0.5、A-C で+0.3
                         groupScore += score;
@@ -1755,8 +1790,10 @@ function calculateGroupScore(skills, apparatus) {
                         groupScore += 0.5; // A難度以上で+0.5
                         console.log(`  Added 0.5 for Group I`);
                     } else if (normalizedGroup === 4) {
-                        groupScore += highestValue; // 終末技は難度価値点と同じ
-                        console.log(`  Added ${highestValue} for Group IV (dismount)`);
+                        // NL3 (2026/1/1〜): 終末技EGは難度価値点と同じ、ただし最大0.5
+                        const dismountScore = Math.min(highestValue, 0.5);
+                        groupScore += dismountScore;
+                        console.log(`  Added ${dismountScore} for Group IV (dismount, capped at 0.5 per NL3)`);
                     } else {
                         const score = highestValue >= 0.4 ? 0.5 : 0.3; // D難度以上で+0.5、A-C で+0.3
                         groupScore += score;
@@ -1955,7 +1992,11 @@ function updateRequirements(apparatus, validSkills) {
                     const isChecked = (checkbox1 && checkbox1.checked) || (checkbox2 && checkbox2.checked);
                     return isChecked ? 1 : 0;
                 })() },
-                { name: '最大技数8技', required: 8, actual: Math.min(validSkills.length, 8) }
+                { name: '最大技数8技', required: 8, actual: Math.min(validSkills.length, 8) },
+                // NL1/NL3 追加要求項目
+                { name: 'NL1: アクロバット技で演技開始（不備= -0.3 ND）', manualCheck: 'fx-acro-start-check', stateKey: 'acroStart', checked: fxNLState.acroStart },
+                { name: 'NL1: バランスまたは跳躍技の実施（不備= -0.3 ND）', manualCheck: 'fx-balance-check', stateKey: 'balanceJump', checked: fxNLState.balanceJump },
+                { name: 'NL1/NL3: 各コーナー移動が異なる（不備= -0.3 ND）', manualCheck: 'fx-corners-check', stateKey: 'cornerTransitions', checked: fxNLState.cornerTransitions }
             ];
             break;
         case 'PH': // あん馬
@@ -2028,14 +2069,25 @@ function updateRequirements(apparatus, validSkills) {
             const otherNDInput = document.getElementById('sr-other-nd-input');
             const otherNDValue = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0.3;
             const currentChecked = otherNDValue < 0.1;
-            
+
             reqDiv.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 6px;">
-                    <input type="checkbox" id="sr-handstand-check" 
-                           onchange="updateHandstandND('SR')" 
-                           style="transform: scale(1.1); margin-right: 4px;" 
+                    <input type="checkbox" id="sr-handstand-check"
+                           onchange="updateHandstandND('SR')"
+                           style="transform: scale(1.1); margin-right: 4px;"
                            ${currentChecked ? 'checked="checked"' : ''}>
                     <span>${req.name}</span>
+                </div>
+            `;
+        } else if (req.manualCheck) {
+            // NL1/NL3 手動チェック項目（fxNLState で管理）
+            reqDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="${req.manualCheck}"
+                           onchange="updateFXNLState('${req.stateKey}', this.checked)"
+                           style="transform: scale(1.1); margin-right: 4px;"
+                           ${req.checked ? 'checked="checked"' : ''}>
+                    <span style="font-size: 0.9em; color: #555;">${req.name}</span>
                 </div>
             `;
         } else if (req.combined) {
@@ -2429,3 +2481,5 @@ window.switchApparatus = switchApparatus;
 window.removeSkill = removeSkill;
 window.moveSkill = moveSkill;
 window.moveSkillToPosition = moveSkillToPosition;
+window.updateFXNLState = updateFXNLState;
+window.fxNLState = fxNLState;

@@ -6,9 +6,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon.svg">
     <title>体操競技 Dスコア計算システム</title>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1067083755252901"
      crossorigin="anonymous"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('[SW] Registered:', reg.scope))
+                    .catch(err => console.warn('[SW] Registration failed:', err));
+            });
+        }
+    </script>
     <style>
         * {
             margin: 0;
@@ -121,7 +132,8 @@
                 女子: VT, UB, BB, FX | 男子: FX, PH, SR, VT, PB, HB
             </p>
             <p style="margin-top: 2rem; font-size: 0.75rem; opacity: 0.8;">
-                2025-2028年FIG採点規則対応
+                2025-2028年FIG採点規則対応<br>
+                MAG NL1-3 (2025) / WAG NL1 (2026/2) 反映
             </p>
             <p style="margin-top: 0.3rem; font-size: 0.65rem; opacity: 0.7;">
                 制作: Kaito-Imadu with Claude Code

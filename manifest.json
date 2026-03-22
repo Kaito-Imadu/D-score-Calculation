@@ -1,0 +1,32 @@
+{
+  "name": "体操競技 Dスコア計算システム",
+  "short_name": "Dスコア計算",
+  "description": "2025-2028年FIG採点規則対応の体操競技Dスコア計算アプリ（男子6種目・女子4種目）",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#667eea",
+  "theme_color": "#667eea",
+  "lang": "ja",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["sports", "utilities"],
+  "shortcuts": [
+    {
+      "name": "男子体操",
+      "url": "./men.html",
+      "description": "男子体操競技Dスコア計算（6種目）"
+    },
+    {
+      "name": "女子体操",
+      "url": "./women.html",
+      "description": "女子体操競技Dスコア計算（4種目）"
+    }
+  ]
+}

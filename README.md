@@ -1,12 +1,15 @@
 # 体操競技 Dスコア計算システム
 
-2025-2028年FIG採点規則に対応した体操競技のDスコア計算システムです。
+2025-2028年FIG採点規則（MAG NL1-3・WAG NL1対応）の体操競技Dスコア計算PWAアプリです。
 
-## 🌐 Webアプリケーション
+## 🌐 Webアプリ / インストール
 
 https://kaito-imadu.github.io/D-score-Calculation/
 
-## 📋 機能
+スマートフォン・タブレット・PCでインストール可能なPWA（Progressive Web App）です。
+ブラウザの「ホーム画面に追加」でオフラインでも利用できます。
+
+## 📋 対応種目
 
 ### 男子体操（6種目）
 - ゆか（FX）
@@ -35,9 +38,56 @@ https://kaito-imadu.github.io/D-score-Calculation/
 - **履歴機能**: Ctrl+Z/Yで操作の取り消し・やり直し
 - **自動保存**: ブラウザに自動保存（リロード後も復元）
 - **レポート生成**: 全種目の結果をPNG画像で保存
+- **PWA**: オフライン対応・ホーム画面インストール可能
 
 ### 女子限定機能
 - **ルール切り替え**: 標準ルール（国際大会用）と変更規則Ⅰ（日本国内用）の切り替え
+
+## 📰 反映済みニュースレター
+
+### MAG（男子体操）
+| 号 | 発行 | 主な変更点 |
+|---|---|---|
+| NL1 | 2025年8月 | FX: アクロバット技開始・バランス/跳躍要件・コーナー移動 ND追加（0.3ND/項目） |
+| NL2 | 2025年9月 | PB: ガットソン系要件明確化、HB: ロシアンジャイアント判定基準 |
+| NL3 | 2025年12月 | **終末技EGキャップ0.5**（PH/SR/PB/HB）、FX: コーナー移動異なること（2026/1/1〜）、審判原則変更 |
+
+#### MAG NL3 主要ルール変更（2026年1月1日〜）
+- **終末技グループ点の上限**: あん馬・つり輪・平行棒・鉄棒の終末技EGスコアが最大0.5に変更（従来は技の難度値そのまま）
+  - E難度以下: 変更なし（0.5以下）
+  - **F難度以上: 0.6→0.5に減点**（例: G難度終末技 = 0.7→0.5）
+- **ゆかのND新設**: 以下の3項目がND対象に（各0.3ND）
+  - 演技をアクロバット技で開始しない場合
+  - バランスまたは承認された跳躍技を実施しない場合
+  - 各コーナーの移動技が同じ場合（2026/1/1〜）
+
+#### MAG NL3 新規命名技
+| 種目 | 競技者 | 難度 |
+|---|---|---|
+| あん馬 | Hamlet MANUKYAN (ARM) | F |
+| 平行棒 | Stefano PATRON (ITA) | C |
+
+#### MAG NL1 新規命名技
+| 種目 | 競技者 | 難度 |
+|---|---|---|
+| あん馬 | Jesse MOORE (AUS) – Bertoncelj to Busnari | G |
+| 跳馬 | Mahdi OLFATI (IRI) | 5.6 |
+| 平行棒 | James HALL (GBR) | E |
+
+### WAG（女子体操）
+| 号 | 発行 | 主な変更点 |
+|---|---|---|
+| NL1 | 2026年2月 | UB: 転倒後スプリングボード再使用可・二重伸身宙返り認識基準、FX CR1: ダンス系列要件明確化 |
+
+#### WAG NL1 新規命名技
+| 種目 | 競技者 | 国 | 難度 |
+|---|---|---|---|
+| 段違い平行棒 | Yihan ZHANG | CHN | G |
+| 段違い平行棒 | Yume MINAMINO | JPN | F |
+| 段違い平行棒 | Fanyuwei YANG | CHN | G |
+| 段違い平行棒 | Mana OKAMURA | JPN | D |
+| 平均台 | Celeste MORDENTI | LUX | C |
+| ゆか | Maïana PRAT | FRA | E |
 
 ## 🚀 使い方
 
@@ -49,22 +99,38 @@ https://kaito-imadu.github.io/D-score-Calculation/
 6. 目標Eスコアを入力
 7. 自動的にDスコアと目標合計点が計算されます
 
+### NL1/NL3 ND項目について（男子ゆか）
+要求項目チェック欄に3つの新しいチェックボックスが追加されました。
+チェックを**外した状態** = 要件を満たしていない = **0.3NDが自動加算**されます。
+
+## 📱 PWAインストール方法
+
+### iOS (Safari)
+1. Safariでサイトを開く
+2. 共有ボタン → 「ホーム画面に追加」
+
+### Android (Chrome)
+1. Chromeでサイトを開く
+2. メニュー → 「アプリをインストール」
+
+### PC (Chrome/Edge)
+1. アドレスバー右端のインストールアイコンをクリック
+
 ## 💾 データ保存
 
 入力データは自動的にブラウザのLocalStorageに保存されます。
 
-- 男子データ: men_gymnastics_d_score_data
-- 女子データ: women_gymnastics_d_score_data
+- 男子データ: `men_gymnastics_d_score_data`
+- 女子データ: `women_gymnastics_d_score_data`
 
 データを削除する場合は、各ページの「保存データ削除」ボタンをクリックしてください。
 
 ## 🛠️ 技術スタック
 
-- HTML5
-- CSS3
-- Vanilla JavaScript
+- HTML5 / CSS3 / Vanilla JavaScript
 - LocalStorage API
 - html2canvas（レポート生成用）
+- **Service Worker + Web App Manifest（PWA）**
 
 ## 📝 ライセンス
 
@@ -76,6 +142,11 @@ Kaito-Imadu with Claude Code
 
 ## 📅 更新履歴
 
+- 2026-03-22: PWA化・MAG NL1-3・WAG NL1対応
+  - PWA (Service Worker + Manifest) 追加、オフライン対応
+  - MAG NL3: PH/SR/PB/HB 終末技EGキャップ0.5適用
+  - MAG NL1/NL3: ゆか新規ND要件3項目追加（アクロバット開始・バランス/跳躍・コーナー移動）
+  - WAG NL1: FX CR1ダンス系列要件説明更新
 - 2025-01-15: 初版リリース
   - 男子6種目・女子4種目対応
   - 2025-2028年FIG採点規則準拠

@@ -2109,7 +2109,7 @@ function updateRequirements(apparatus, validSkills) {
             break;
         case 'FX': // ゆか
             requirements = [
-                { name: 'CR1: ダンス系列（ジャンプ・リープの組み合わせ）', required: 1, actual: egCounts['Ⅰ'] },
+                { name: 'CR1: ダンス系列（大きく流れる移動パターン・途中停止/ポーズ/歩行禁止 ※NL1）', required: 1, actual: egCounts['Ⅰ'] },
                 { name: 'CR2: 縦軸ひねり技（360°以上）', required: 1, actual: egCounts['Ⅱ'] },
                 { name: 'CR3: 前転・後転宙返りの両方', required: 1, actual: egCounts['Ⅲ'] },
                 { name: 'CR4: 着地技（D難度以上）', required: 1, actual: (() => {
