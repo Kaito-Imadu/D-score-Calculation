@@ -1,5 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="80" fill="#667eea"/>
-  <text x="256" y="320" font-family="Arial, sans-serif" font-size="280" text-anchor="middle" fill="white">🤸</text>
-  <text x="256" y="480" font-family="Arial, sans-serif" font-size="72" font-weight="bold" text-anchor="middle" fill="white">D</text>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#667eea"/>
+      <stop offset="100%" stop-color="#764ba2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="90" fill="url(#bg)"/>
+
+  <!-- "D" between split legs -->
+  <text x="256" y="162" font-family="'Arial Black', Arial, sans-serif"
+        font-size="88" font-weight="900" text-anchor="middle"
+        fill="rgba(255,255,255,0.88)">D</text>
+
+  <!-- Gymnast in handstand (inverted): legs at top, hands at bottom -->
+  <g stroke="white" stroke-linecap="round" stroke-linejoin="round"
+     fill="none" stroke-width="20">
+    <!-- Head -->
+    <circle cx="256" cy="350" r="30"/>
+    <!-- Left arm -->
+    <line x1="168" y1="426" x2="225" y2="302"/>
+    <!-- Right arm -->
+    <line x1="344" y1="426" x2="287" y2="302"/>
+    <!-- Body -->
+    <line x1="256" y1="295" x2="256" y2="168"/>
+    <!-- Left leg (upper-left) -->
+    <line x1="256" y1="168" x2="140" y2="52"/>
+    <!-- Right leg (upper-right) -->
+    <line x1="256" y1="168" x2="372" y2="52"/>
+  </g>
+
+  <!-- Hands -->
+  <circle cx="168" cy="426" r="13" fill="white"/>
+  <circle cx="344" cy="426" r="13" fill="white"/>
+  <!-- Feet -->
+  <circle cx="136" cy="48"  r="13" fill="white"/>
+  <circle cx="376" cy="48"  r="13" fill="white"/>
+
+  <!-- Bottom label -->
+  <rect x="88" y="454" width="336" height="44" rx="22" fill="rgba(255,255,255,0.18)"/>
+  <text x="256" y="484" font-family="'Arial Black', Arial, sans-serif"
+        font-size="20" font-weight="900" text-anchor="middle"
+        fill="white" letter-spacing="3">D SCORE</text>
 </svg>
