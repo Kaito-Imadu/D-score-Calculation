@@ -9,37 +9,41 @@
   <!-- Background -->
   <rect width="512" height="512" rx="90" fill="url(#bg)"/>
 
-  <!-- Score display (scoreboard element) -->
-  <rect x="140" y="22" width="170" height="62" rx="14"
-        fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
-  <text x="225" y="66" font-family="'Arial Black', Arial, sans-serif"
-        font-size="32" font-weight="900" text-anchor="middle" fill="white">D 6.4</text>
-
-  <!-- Lightning bolt (auto-calculation) -->
-  <path d="M325,22 L342,22 L332,52 L345,52 L318,92 L328,58 L314,58 Z"
-        fill="rgba(255,255,255,0.82)"/>
-
-  <!-- Rondaat stick figure: body diagonal, one hand planted, legs split high -->
-  <g stroke="white" stroke-linecap="round" stroke-linejoin="round"
-     fill="none" stroke-width="19">
-    <!-- Head (hanging near planted hand) -->
-    <circle cx="298" cy="351" r="24"/>
-    <!-- Right arm: planted hand → shoulder -->
-    <line x1="347" y1="399" x2="271" y2="301"/>
-    <!-- Left arm: lifted hand → shoulder -->
-    <line x1="175" y1="362" x2="266" y2="298"/>
-    <!-- Body: shoulder → hips -->
-    <line x1="268" y1="298" x2="250" y2="205"/>
-    <!-- Left leg: hips → upper-left (split) -->
-    <line x1="250" y1="205" x2="139" y2="102"/>
-    <!-- Right leg: hips → upper-right (split) -->
-    <line x1="250" y1="205" x2="370" y2="109"/>
+  <!--
+    Star jump (スタージャンプ) silhouette:
+    両腕を斜め上に広げ、両足を斜め下に開いた左右対称の星形ポーズ。
+    stroke-width=26 → 48px時に約2.4px、十分な視認性。
+    stroke-linecap=round で関節がなめらか。
+  -->
+  <g stroke="white" stroke-width="26" stroke-linecap="round" fill="none">
+    <!-- 体幹 -->
+    <line x1="256" y1="94"  x2="256" y2="226"/>
+    <!-- 左腕: 肩(244,118) → 左上手先(114,43) / 水平から約30°上 -->
+    <line x1="244" y1="118" x2="114" y2="43"/>
+    <!-- 右腕: 肩(268,118) → 右上手先(398,43) -->
+    <line x1="268" y1="118" x2="398" y2="43"/>
+    <!-- 左足: 股関節(244,225) → 左下足先(145,324) / 鉛直から約45° -->
+    <line x1="244" y1="225" x2="145" y2="324"/>
+    <!-- 右足: 股関節(268,225) → 右下足先(367,324) -->
+    <line x1="268" y1="225" x2="367" y2="324"/>
   </g>
 
-  <!-- Hands -->
-  <circle cx="347" cy="399" r="12" fill="white"/>
-  <circle cx="175" cy="362" r="12" fill="white"/>
-  <!-- Feet -->
-  <circle cx="135" cy="98"  r="12" fill="white"/>
-  <circle cx="374" cy="105" r="12" fill="white"/>
+  <!-- 頭部 (塗りつぶし円で確実にスケール) -->
+  <circle cx="256" cy="60" r="33" fill="white"/>
+
+  <!-- セパレーター -->
+  <line x1="104" y1="356" x2="408" y2="356"
+        stroke="rgba(255,255,255,0.22)" stroke-width="1.5"/>
+
+  <!-- D : 機能を一文字で示す -->
+  <text x="256" y="442"
+        font-family="'Arial Black', Arial, sans-serif"
+        font-size="80" font-weight="900"
+        text-anchor="middle" fill="white">D</text>
+
+  <!-- SCORE : 補足ラベル(大サイズ時のみ可読) -->
+  <text x="256" y="478"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="13" text-anchor="middle"
+        fill="rgba(255,255,255,0.68)" letter-spacing="5">SCORE</text>
 </svg>
