@@ -9,38 +9,37 @@
   <!-- Background -->
   <rect width="512" height="512" rx="90" fill="url(#bg)"/>
 
-  <!-- "D" between split legs -->
-  <text x="256" y="162" font-family="'Arial Black', Arial, sans-serif"
-        font-size="88" font-weight="900" text-anchor="middle"
-        fill="rgba(255,255,255,0.88)">D</text>
+  <!-- Score display (scoreboard element) -->
+  <rect x="140" y="22" width="170" height="62" rx="14"
+        fill="rgba(255,255,255,0.18)" stroke="rgba(255,255,255,0.45)" stroke-width="1.5"/>
+  <text x="225" y="66" font-family="'Arial Black', Arial, sans-serif"
+        font-size="32" font-weight="900" text-anchor="middle" fill="white">D 6.4</text>
 
-  <!-- Gymnast in handstand (inverted): legs at top, hands at bottom -->
+  <!-- Lightning bolt (auto-calculation) -->
+  <path d="M325,22 L342,22 L332,52 L345,52 L318,92 L328,58 L314,58 Z"
+        fill="rgba(255,255,255,0.82)"/>
+
+  <!-- Rondaat stick figure: body diagonal, one hand planted, legs split high -->
   <g stroke="white" stroke-linecap="round" stroke-linejoin="round"
-     fill="none" stroke-width="20">
-    <!-- Head -->
-    <circle cx="256" cy="350" r="30"/>
-    <!-- Left arm -->
-    <line x1="168" y1="426" x2="225" y2="302"/>
-    <!-- Right arm -->
-    <line x1="344" y1="426" x2="287" y2="302"/>
-    <!-- Body -->
-    <line x1="256" y1="295" x2="256" y2="168"/>
-    <!-- Left leg (upper-left) -->
-    <line x1="256" y1="168" x2="140" y2="52"/>
-    <!-- Right leg (upper-right) -->
-    <line x1="256" y1="168" x2="372" y2="52"/>
+     fill="none" stroke-width="19">
+    <!-- Head (hanging near planted hand) -->
+    <circle cx="298" cy="351" r="24"/>
+    <!-- Right arm: planted hand → shoulder -->
+    <line x1="347" y1="399" x2="271" y2="301"/>
+    <!-- Left arm: lifted hand → shoulder -->
+    <line x1="175" y1="362" x2="266" y2="298"/>
+    <!-- Body: shoulder → hips -->
+    <line x1="268" y1="298" x2="250" y2="205"/>
+    <!-- Left leg: hips → upper-left (split) -->
+    <line x1="250" y1="205" x2="139" y2="102"/>
+    <!-- Right leg: hips → upper-right (split) -->
+    <line x1="250" y1="205" x2="370" y2="109"/>
   </g>
 
   <!-- Hands -->
-  <circle cx="168" cy="426" r="13" fill="white"/>
-  <circle cx="344" cy="426" r="13" fill="white"/>
+  <circle cx="347" cy="399" r="12" fill="white"/>
+  <circle cx="175" cy="362" r="12" fill="white"/>
   <!-- Feet -->
-  <circle cx="136" cy="48"  r="13" fill="white"/>
-  <circle cx="376" cy="48"  r="13" fill="white"/>
-
-  <!-- Bottom label -->
-  <rect x="88" y="454" width="336" height="44" rx="22" fill="rgba(255,255,255,0.18)"/>
-  <text x="256" y="484" font-family="'Arial Black', Arial, sans-serif"
-        font-size="20" font-weight="900" text-anchor="middle"
-        fill="white" letter-spacing="3">D SCORE</text>
+  <circle cx="135" cy="98"  r="12" fill="white"/>
+  <circle cx="374" cy="105" r="12" fill="white"/>
 </svg>
