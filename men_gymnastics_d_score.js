@@ -20,19 +20,33 @@ const currentRoutines = {
 
 let currentApparatus = 'FX';
 
-// FX NL1/NL3 要求項目チェック状態（true = 満たしている = NDなし）
-// NL1 (2025-08): アクロバット開始・バランス/跳躍実施
-// NL1/NL3 (2026-01-01〜): 各コーナー移動が異なること
+// FX COMPOSITION ND チェック状態（true = 満たしている = NDなし）
+// deductions.ts の ND_CHECKLIST FX COMPOSITION 6項目に対応
 const fxNLState = {
-    acroStart: true,         // NL1: 演技をアクロバット技で開始
-    balanceJump: true,       // NL1: バランスまたは跳躍・跳技の実施
-    cornerTransitions: true  // NL1/NL3: 各コーナー移動が異なること（2026/1/1〜）
+    groupIStart: true,       // グループIから開始
+    balanceOrJump: true,     // 片足平均立ち技 / ジャンプ / リープ
+    cornersDiff: true,       // コーナー動きすべて異なる
+    dismount: true,          // 終末技 2回宙 / 3回宙
+    diagonals: true,         // 対角線3回
+    allCorners: true         // すべてのコーナー使用
 };
 
-// FX NL1/NL3 状態更新関数
+// FX ND 状態更新関数
 function updateFXNLState(key, checked) {
     fxNLState[key] = checked;
     calculateScore('FX');
+}
+
+// SR COMPOSITION ND チェック状態（true = 満たしている = NDなし）
+// deductions.ts の ND_CHECKLIST SR COMPOSITION 1項目に対応
+const srNLState = {
+    handstand: true          // 振動から倒立静止技
+};
+
+// SR ND 状態更新関数
+function updateSRNLState(key, checked) {
+    srNLState[key] = checked;
+    calculateScore('SR');
 }
 
 // ローカルストレージ管理システム
@@ -105,6 +119,7 @@ const storageManager = {
                 otherNDs: otherNDs,
                 eScores: eScores,
                 fxNLState: { ...fxNLState },
+                srNLState: { ...srNLState },
                 timestamp: Date.now()
             };
             localStorage.setItem('men_gymnastics_d_score_data', JSON.stringify(dataToSave));
@@ -200,10 +215,15 @@ const storageManager = {
                     });
                 }
                 
-                // FX NL1/NL3 状態を復元
+                // FX ND 状態を復元
                 if (data.fxNLState) {
                     Object.assign(fxNLState, data.fxNLState);
                     console.log('Restored fxNLState:', fxNLState);
+                }
+                // SR ND 状態を復元
+                if (data.srNLState) {
+                    Object.assign(srNLState, data.srNLState);
+                    console.log('Restored srNLState:', srNLState);
                 }
 
                 console.log('=== LOAD FROM STORAGE ===');
@@ -1571,43 +1591,25 @@ function calculateScore(apparatus) {
     const eScoreInput = document.getElementById(`${apparatus.toLowerCase()}-e-score-input`);
     const eScore = eScoreInput ? parseFloat(eScoreInput.value) || 8.5 : 8.5;
     
-    // 技数ND計算（PDFの表に基づく正確な計算）
-    // カスタム技も技数NDの計算に含める
-    const skillCount = validSkills.length;
-    
-    // Number of elements Neutral Deduction (ND) 表（PDFより）
-    // 8技以上または7技以上 = 0.0点, それ以外は表の通り
-    if (skillCount >= 8) {
-        skillND = 0.0;
-    } else if (skillCount === 7) {
-        skillND = 0.0;
-    } else if (skillCount === 6) {
-        skillND = 0.0;
-    } else if (skillCount === 5) {
-        skillND = 3.0;
-    } else if (skillCount === 4) {
-        skillND = 4.0;
-    } else if (skillCount === 3) {
-        skillND = 5.0;
-    } else if (skillCount === 2) {
-        skillND = 6.0;
-    } else if (skillCount === 1) {
-        skillND = 7.0;
-    } else {
-        skillND = 10.0; // 0技の場合
-    }
-    
-    console.log(`Skill count: ${skillCount}, Skill ND: ${skillND}`);
+    // 技数NDは存在しない（MAGルールに技数NDなし）
+    skillND = 0;
     
     // その他ND（手動入力）
     const otherNDInput = document.getElementById(`${apparatus.toLowerCase()}-other-nd-input`);
     otherND = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0;
 
-    // FX NL1/NL3 自動ND（チェックボックスの状態から計算）
+    // FX COMPOSITION ND（deductions.ts に準拠、各 -0.3）
     if (apparatus === 'FX') {
-        if (!fxNLState.acroStart) otherND += 0.3;      // NL1: アクロバット技で開始していない
-        if (!fxNLState.balanceJump) otherND += 0.3;    // NL1: バランス/跳躍技を実施していない
-        if (!fxNLState.cornerTransitions) otherND += 0.3; // NL1/NL3: コーナー移動が重複している
+        if (!fxNLState.groupIStart) otherND += 0.3;
+        if (!fxNLState.balanceOrJump) otherND += 0.3;
+        if (!fxNLState.cornersDiff) otherND += 0.3;
+        if (!fxNLState.dismount) otherND += 0.3;
+        if (!fxNLState.diagonals) otherND += 0.3;
+        if (!fxNLState.allCorners) otherND += 0.3;
+    }
+    // SR COMPOSITION ND（deductions.ts に準拠、-0.3）
+    if (apparatus === 'SR') {
+        if (!srNLState.handstand) otherND += 0.3;
     }
 
     const totalScore = difficultyScore + groupScore + connectionScore + landingBonus;
@@ -1986,17 +1988,14 @@ function updateRequirements(apparatus, validSkills) {
                 { name: 'EG Ⅱ（前方系の跳躍技）', required: 1, actual: egCounts['Ⅱ'] },
                 { name: 'EG Ⅲ（後方系の跳躍技）', required: 1, actual: egCounts['Ⅲ'] },
                 { name: 'EG Ⅳ（1回以上のひねりを伴う1回宙返り技）', required: 1, actual: egCounts['Ⅳ'] },
-                { name: '2回（3回）宙返り系の終末技', required: 1, actual: (() => {
-                    const checkbox1 = document.getElementById('fx-dismount-check');
-                    const checkbox2 = document.getElementById('fx-dismount-requirement-check');
-                    const isChecked = (checkbox1 && checkbox1.checked) || (checkbox2 && checkbox2.checked);
-                    return isChecked ? 1 : 0;
-                })() },
                 { name: '最大技数8技（7技+終末技）', combined: { main: Math.max(0, validSkills.length - 1), mainLimit: 7, sub: validSkills.length > 0 ? 1 : 0, subLimit: 1 } },
-                // NL1/NL3 追加要求項目
-                { name: 'NL1: アクロバット技で演技開始（不備= -0.3 ND）', manualCheck: 'fx-acro-start-check', stateKey: 'acroStart', checked: fxNLState.acroStart },
-                { name: 'NL1: バランスまたは跳躍技の実施（不備= -0.3 ND）', manualCheck: 'fx-balance-check', stateKey: 'balanceJump', checked: fxNLState.balanceJump },
-                { name: 'NL1/NL3: 各コーナー移動が異なる（不備= -0.3 ND）', manualCheck: 'fx-corners-check', stateKey: 'cornerTransitions', checked: fxNLState.cornerTransitions }
+                // COMPOSITION ND チェックボックス（不備 = -0.3 ND、deductions.ts 準拠）
+                { name: 'グループIから開始（不備= -0.3 ND）', manualCheck: 'fx-groupI-check', stateKey: 'groupIStart', checked: fxNLState.groupIStart, state: fxNLState, updateFn: 'updateFXNLState' },
+                { name: '片足平均立ち技 / ジャンプ / リープ（不備= -0.3 ND）', manualCheck: 'fx-balance-check', stateKey: 'balanceOrJump', checked: fxNLState.balanceOrJump, state: fxNLState, updateFn: 'updateFXNLState' },
+                { name: 'コーナー動きすべて異なる（不備= -0.3 ND）', manualCheck: 'fx-corners-check', stateKey: 'cornersDiff', checked: fxNLState.cornersDiff, state: fxNLState, updateFn: 'updateFXNLState' },
+                { name: '終末技 2回宙 / 3回宙（不備= -0.3 ND）', manualCheck: 'fx-dismount-check', stateKey: 'dismount', checked: fxNLState.dismount, state: fxNLState, updateFn: 'updateFXNLState' },
+                { name: '対角線3回（不備= -0.3 ND）', manualCheck: 'fx-diagonals-check', stateKey: 'diagonals', checked: fxNLState.diagonals, state: fxNLState, updateFn: 'updateFXNLState' },
+                { name: 'すべてのコーナー使用（不備= -0.3 ND）', manualCheck: 'fx-allCorners-check', stateKey: 'allCorners', checked: fxNLState.allCorners, state: fxNLState, updateFn: 'updateFXNLState' },
             ];
             break;
         case 'PH': // あん馬
@@ -2014,11 +2013,9 @@ function updateRequirements(apparatus, validSkills) {
                 { name: 'EG Ⅱ（力技・静止技）', required: 1, actual: egCounts['Ⅱ'] },
                 { name: 'EG Ⅲ（振動からの静止技）', required: 1, actual: egCounts['Ⅲ'] },
                 { name: 'EG Ⅳ（終末技）', required: 1, actual: egCounts['Ⅳ'] },
-                { name: '振動倒立技', required: 1, actual: (() => {
-                    const checkbox = document.getElementById('sr-handstand-check');
-                    return checkbox ? (checkbox.checked ? 1 : 0) : 0;
-                })() },
-                { name: '最大技数8技（7技+終末技）', combined: { main: validSkills.length - egCounts['Ⅳ'], mainLimit: 7, sub: egCounts['Ⅳ'], subLimit: 1 } }
+                { name: '最大技数8技（7技+終末技）', combined: { main: validSkills.length - egCounts['Ⅳ'], mainLimit: 7, sub: egCounts['Ⅳ'], subLimit: 1 } },
+                // COMPOSITION ND チェックボックス（不備 = -0.3 ND、deductions.ts 準拠）
+                { name: '振動から倒立静止技（不備= -0.3 ND）', manualCheck: 'sr-handstand-check', stateKey: 'handstand', checked: srNLState.handstand, state: srNLState, updateFn: 'updateSRNLState' },
             ];
             break;
         case 'PB': // 平行棒
@@ -2048,43 +2045,12 @@ function updateRequirements(apparatus, validSkills) {
         const statusClass = req.actual >= req.required ? 'requirement-met' : 'requirement-not-met';
         const statusText = req.actual >= req.required ? '満たしている' : '不足';
         
-        // 手動チェック項目の場合はチェックボックス付きで表示
-        if (req.name === '2回（3回）宙返り系の終末技') {
-            // その他NDの値を確認してチェック状態を決定
-            const otherNDInput = document.getElementById('fx-other-nd-input');
-            const otherNDValue = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0.3;
-            const currentChecked = otherNDValue < 0.1; // NDが0に近い場合はチェック済み
-            
-            reqDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <input type="checkbox" id="fx-dismount-requirement-check" 
-                           onchange="updateDismountND('FX')" 
-                           style="transform: scale(1.1); margin-right: 4px;" 
-                           ${currentChecked ? 'checked="checked"' : ''}>
-                    <span>${req.name}</span>
-                </div>
-            `;
-        } else if (req.name === '振動倒立技') {
-            // つり輪の振動倒立技
-            const otherNDInput = document.getElementById('sr-other-nd-input');
-            const otherNDValue = otherNDInput ? parseFloat(otherNDInput.value) || 0 : 0.3;
-            const currentChecked = otherNDValue < 0.1;
-
-            reqDiv.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 6px;">
-                    <input type="checkbox" id="sr-handstand-check"
-                           onchange="updateHandstandND('SR')"
-                           style="transform: scale(1.1); margin-right: 4px;"
-                           ${currentChecked ? 'checked="checked"' : ''}>
-                    <span>${req.name}</span>
-                </div>
-            `;
-        } else if (req.manualCheck) {
-            // NL1/NL3 手動チェック項目（fxNLState で管理）
+        // manualCheck 項目: updateFn で指定した関数でND管理
+        if (req.manualCheck) {
             reqDiv.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <input type="checkbox" id="${req.manualCheck}"
-                           onchange="updateFXNLState('${req.stateKey}', this.checked)"
+                           onchange="${req.updateFn}('${req.stateKey}', this.checked)"
                            style="transform: scale(1.1); margin-right: 4px;"
                            ${req.checked ? 'checked="checked"' : ''}>
                     <span style="font-size: 0.9em; color: #555;">${req.name}</span>
@@ -2326,20 +2292,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // データがない場合はデフォルト表示
         displayCurrentRoutine('FX');
         
-        // 初回読み込み時：ゆかのその他NDを0.3に設定
-        const fxOtherNDInput = document.getElementById('fx-other-nd-input');
-        if (fxOtherNDInput) {
-            fxOtherNDInput.value = '0.3';
-            // 初期計算も実行
-            setTimeout(() => calculateScore('FX'), 100);
-        }
-        
-        // 初回読み込み時：つり輪のその他NDを0.3に設定（振動倒立技を満たしていない前提）
-        const srOtherNDInput = document.getElementById('sr-other-nd-input');
-        if (srOtherNDInput) {
-            srOtherNDInput.value = '0.3';
-            setTimeout(() => calculateScore('SR'), 100);
-        }
+        // 初回読み込み時：全種目スコアを計算
+        setTimeout(() => {
+            calculateScore('FX');
+            calculateScore('SR');
+        }, 100);
     }
     
     // 初期スナップショットを保存（復元後または初期状態）
@@ -2483,3 +2440,5 @@ window.moveSkill = moveSkill;
 window.moveSkillToPosition = moveSkillToPosition;
 window.updateFXNLState = updateFXNLState;
 window.fxNLState = fxNLState;
+window.updateSRNLState = updateSRNLState;
+window.srNLState = srNLState;
