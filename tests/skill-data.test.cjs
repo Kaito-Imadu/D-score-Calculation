@@ -64,3 +64,14 @@ test('legacy data blocks report export before html2canvas', () => {
     app.run("currentRoutines.FX = [{name: 'old', difficulty: 'A'}]; generateReport()");
     assert.equal(warnings, 1);
 });
+
+
+for (const filename of ['men.html', 'women.html']) {
+    test(`${filename}: inline scripts parse`, () => {
+        const html = fs.readFileSync(path.join(__dirname, '..', filename), 'utf8');
+        for (const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/g)) {
+            if (match[1].includes('application/ld+json') || !match[2].trim()) continue;
+            assert.doesNotThrow(() => new vm.Script(match[2]));
+        }
+    });
+}

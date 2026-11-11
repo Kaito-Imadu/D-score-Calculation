@@ -2131,16 +2131,6 @@
                 `;
             });
             
-            // 総合スコア追加
-            let totalDScore = 0, totalEScore = 0, totalND = 0;
-            Object.keys(apparatusNames).forEach(apparatus => {
-                const scores = calculateReportScores(apparatus);
-                totalDScore += parseFloat(scores.total);
-                totalEScore += parseFloat(scores.eScore);
-                totalND += parseFloat(scores.skillND) + parseFloat(scores.otherND);
-            });
-            const totalTargetScore = totalDScore + totalEScore - totalND;
-            
             html += `
                     </div>
                     
