@@ -22,16 +22,10 @@ D-score-Calculation/
 ├── manifest.json                 # PWA マニフェスト
 ├── sw.js                         # Service Worker（オフライン対応）
 ├── icon.svg                      # PWAアイコン
-├── floor_skills.js               # ゆか技データ（存在しない場合はdemo data使用）
-├── pommel_skills.js              # あん馬技データ（存在しない場合はdemo data使用）
-├── rings_skills.js               # つり輪技データ（存在しない場合はdemo data使用）
-├── parallel_skills.js            # 平行棒技データ（存在しない場合はdemo data使用）
-├── highbar_skills.js             # 鉄棒技データ（存在しない場合はdemo data使用）
-├── skills_database.js            # 女子技データ（存在しない場合はdemo data使用）
 └── README.md
 ```
 
-**注意**: `*_skills.js` ファイルは現在存在せず、アプリはdemo dataにフォールバックして動作する。
+**注意**: 現行は手入力方式。旧技DBとデモデータは読み込まない。女子の旧形式保存データにDB依存の技がある場合は採点を停止する。
 
 ## 採点ルール参照
 
@@ -122,5 +116,5 @@ LocalStorage使用:
 
 - ビルドプロセスなし。変更は即座にgit pushで反映される
 - `sw.js` の `CACHE_NAME` を変更しないとユーザーが古いキャッシュを使い続ける
-- 技データベースファイルが存在しない場合、デモデータで動作する（技の自動補完が効かない）
+- 技データベースによる自動補完は提供しない。旧形式の女子データで補完が必要な技は採点を停止する
 - `men.html` / `women.html` は非常に大きなファイル（2000+行）。編集時は対象箇所を特定してから変更する

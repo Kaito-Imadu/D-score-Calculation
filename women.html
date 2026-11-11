@@ -83,6 +83,10 @@
         
 function addASkill(apparatus) {            console.log('addASkill called for:', apparatus);                        if (typeof currentRoutines === 'undefined') {                console.error('currentRoutines is not defined yet');                alert('システムが完全に読み込まれていません。少し待ってからお試しください。');                return;            }                        const aSkill = {                name: '',                difficulty: 'a',                elementGroup: '',                isCustom: true,                isASkill: true,                skillType: 'acro'             };                        console.log('Creating a-skill:', aSkill);                        if (!currentRoutines[apparatus]) {                currentRoutines[apparatus] = [];            }            currentRoutines[apparatus].push(aSkill);                        console.log(`Added a-skill to ${apparatus}:`, aSkill);                        if (typeof displayCurrentRoutine === 'function') {                displayCurrentRoutine(apparatus);            }                        if (typeof calculateScore === 'function') {                calculateScore(apparatus);            }                        if (typeof historyManager !== 'undefined' && typeof historyManager.takeSnapshot === 'function') {                historyManager.takeSnapshot(`Add a-skill to ${apparatus}`);            }        }
         function generateReport() {
+            if (hasUnavailableSkillData()) {
+                alert('技データを確認できない演技があります。手入力で登録し直すまでレポートを作成できません。');
+                return;
+            }
             try {
                 console.log('Generate report button clicked');
                 const title = document.getElementById('report-title').value || '大会名';
@@ -1362,6 +1366,7 @@ function addASkill(apparatus) {            console.log('addASkill called for:', 
     </style>
 </head>
 <body>
+    <p role="status" style="padding: 10px; background: #fff3cd; color: #664d03;">技名・難度は手入力です。旧形式の技データに依存する演技は、技データを確認できないため採点を停止します。各技を手入力で登録し直してください。</p>
     <div class="container">
         <h1>女子体操競技 Dスコア計算システム</h1>
 <div style="text-align: center; margin-bottom: 12px;">            <a href="index.html" style="display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: 500; transition: transform 0.2s;">← 性別選択に戻る</a>        </div>
@@ -1944,13 +1949,7 @@ function addASkill(apparatus) {            console.log('addASkill called for:', 
         </div>
     </div>
 
-    <!-- 技データ（CORS問題回避のため） -->
-    <script src="floor_skills.js"></script>
-    <script src="pommel_skills.js"></script>
-    <script src="rings_skills.js"></script>
-    <script src="parallel_skills.js"></script>
-    <script src="highbar_skills.js"></script>
-    <script src="skills_database.js"></script>
+    <!-- 技名・難度は手入力。未検証の旧技データは読み込まない。 -->
     
     <!-- html2canvas ライブラリ -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
@@ -1958,6 +1957,10 @@ function addASkill(apparatus) {            console.log('addASkill called for:', 
     <script>
         // レポートHTMLを生成（DOM要素から直接データ取得）
         function generateReportHTML(title, name) {
+            if (hasUnavailableSkillData()) {
+                alert("技データを確認できない演技があります。手入力で登録し直すまでレポートを作成できません。");
+                return "";
+            }
             try {
                 console.log('=== STARTING REPORT GENERATION ===');
 
@@ -2068,38 +2071,7 @@ function addASkill(apparatus) {            console.log('addASkill called for:', 
                         }
                     }
 
-                    // 技が取得できない場合の緊急フォールバック
-                    if (skills.length === 0) {
-                        console.log(`${apparatus} no skills from currentRoutines, using test data`);
-
-                        // 全種目にテスト用データを追加（確実に表示されるように）
-                        switch (apparatus) {
-                            case 'VT':
-                                skills = [{ name: '跳馬技', difficulty: '', skillNumber: '1.301' }];
-                                break;
-                            case 'UB':
-                                skills = [
-                                    { name: '段違い技1', difficulty: 'C' },
-                                    { name: '段違い技2', difficulty: 'D' }
-                                ];
-                                break;
-                            case 'BB':
-                                skills = [
-                                    { name: '平均台技1', difficulty: 'C', skillType: 'acro' },
-                                    { name: '平均台技2', difficulty: 'D', skillType: 'dance' },
-                                    { name: '平均台技3', difficulty: 'E', skillType: 'acro' }
-                                ];
-                                break;
-                            case 'FX':
-                                skills = [
-                                    { name: 'ゆか技1', difficulty: 'C', skillType: 'acro' },
-                                    { name: 'ゆか技2', difficulty: 'D', skillType: 'dance' },
-                                    { name: 'ゆか技3', difficulty: 'E', skillType: 'acro' }
-                                ];
-                                break;
-                        }
-                        console.log(`Added test data for ${apparatus}:`, skills);
-                    }
+                    // 未入力の種目に架空の技を補わない。
 
                     console.log(`${apparatus} final skills count: ${skills.length}`);
                     skills.forEach((skill, idx) => {

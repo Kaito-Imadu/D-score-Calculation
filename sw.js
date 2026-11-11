@@ -1,7 +1,7 @@
 // Service Worker for 体操競技 Dスコア計算システム
 // 2025-2028年FIG採点規則対応 (MAG NL1-3, WAG NL1反映済み)
 
-const CACHE_NAME = 'd-score-calc-v2';
+const CACHE_NAME = 'd-score-calc-v3';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
