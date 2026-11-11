@@ -336,86 +336,10 @@ const historyManager = {
     }
 };
 
-// 埋め込まれたデータから技データを読み込む
+// 技入力は手動。旧データは規則の版を検証できないため採用しない。
 function loadSkillsData() {
-    console.log('=== Loading Embedded Skills Data ===');
-    
-    try {
-        // 埋め込まれた技データを使用
-        if (typeof FLOOR_SKILLS !== 'undefined') {
-            const validFloorSkills = FLOOR_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.FX = validFloorSkills;
-            console.log(`✓ Floor: ${validFloorSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('FLOOR_SKILLS not found, using demo data');
-            skillsDatabase.FX = generateDemoData('FX');
-        }
-        
-        if (typeof POMMEL_SKILLS !== 'undefined') {
-            const validPommelSkills = POMMEL_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.PH = validPommelSkills;
-            console.log(`✓ Pommel Horse: ${validPommelSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('POMMEL_SKILLS not found, using demo data');
-            skillsDatabase.PH = generateDemoData('PH');
-        }
-        
-        if (typeof RINGS_SKILLS !== 'undefined') {
-            const validRingsSkills = RINGS_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.SR = validRingsSkills;
-            console.log(`✓ Still Rings: ${validRingsSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('RINGS_SKILLS not found, using demo data');
-            skillsDatabase.SR = generateDemoData('SR');
-        }
-        
-        if (typeof PARALLEL_SKILLS !== 'undefined') {
-            const validParallelSkills = PARALLEL_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.PB = validParallelSkills;
-            console.log(`✓ Parallel Bars: ${validParallelSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('PARALLEL_SKILLS not found, using demo data');
-            skillsDatabase.PB = generateDemoData('PB');
-        }
-        
-        if (typeof HIGHBAR_SKILLS !== 'undefined') {
-            const validHighbarSkills = HIGHBAR_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.HB = validHighbarSkills;
-            console.log(`✓ High Bar: ${validHighbarSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('HIGHBAR_SKILLS not found, using demo data');
-            skillsDatabase.HB = generateDemoData('HB');
-        }
-    } catch (error) {
-        console.error('Error loading embedded skills data:', error);
-        
-        // フォールバック：すべてデモデータを使用
-        skillsDatabase.FX = generateDemoData('FX');
-        skillsDatabase.PH = generateDemoData('PH');
-        skillsDatabase.SR = generateDemoData('SR');
-        skillsDatabase.PB = generateDemoData('PB');
-        skillsDatabase.HB = generateDemoData('HB');
-    }
-
-    console.log('=== Skills Data Loading Complete ===');
-    
-    // 全体のサマリー
     Object.keys(skillsDatabase).forEach(apparatus => {
-        const skills = skillsDatabase[apparatus];
-        console.log(`${apparatus}: ${skills.length} valid techniques loaded`);
-        if (skills.length > 0) {
-            console.log(`  Sample: "${skills[0].name}" (EG: ${skills[0].elementGroup || skills[0].eg}, 難度: ${skills[0].difficulty})`);
-        }
+        skillsDatabase[apparatus] = [];
     });
 }
 
@@ -442,37 +366,6 @@ function parseCSV(csvText) {
     }
     
     return skills;
-}
-
-function generateDemoData(apparatus) {
-    const demoData = {
-        'FX': [
-            { name: 'バク転', eg: 'Ⅲ', difficulty: 'A' },
-            { name: '後方屈身2回宙返り', eg: 'Ⅲ', difficulty: 'D' },
-            { name: '前方伸身宙返り', eg: 'Ⅱ', difficulty: 'B' },
-            { name: '脚上挙支持', eg: 'Ⅰ', difficulty: 'B' }
-        ],
-        'PH': [
-            { name: 'Bセア', eg: 'Ⅰ', difficulty: 'B' },
-            { name: '横向き旋回', eg: 'Ⅱ', difficulty: 'A' },
-            { name: 'イコウ', eg: 'Ⅲ', difficulty: 'A' }
-        ],
-        'SR': [
-            { name: 'アザリアン', eg: 'Ⅱ', difficulty: 'D' },
-            { name: '後ろ振り上がり十字懸垂', eg: 'Ⅲ', difficulty: 'C' },
-            { name: 'ディスロー', eg: 'Ⅰ', difficulty: 'A' }
-        ],
-        'PB': [
-            { name: '前方屈身宙返り', eg: 'Ⅱ', difficulty: 'C' },
-            { name: '後方宙返り', eg: 'Ⅲ', difficulty: 'B' }
-        ],
-        'HB': [
-            { name: 'アドラー', eg: 'Ⅱ', difficulty: 'B' },
-            { name: 'コバチ', eg: 'Ⅲ', difficulty: 'C' }
-        ]
-    };
-    
-    return demoData[apparatus] || [];
 }
 
 // 種目切り替え

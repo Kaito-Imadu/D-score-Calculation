@@ -366,86 +366,10 @@ const historyManager = {
     }
 };
 
-// 埋め込まれたデータから技データを読み込む
+// 技入力は手動。旧データは規則の版を検証できないため採用しない。
 function loadSkillsData() {
-    console.log('=== Loading Embedded Skills Data ===');
-    
-    try {
-        // 埋め込まれた技データを使用
-        if (typeof FLOOR_SKILLS !== 'undefined') {
-            const validFloorSkills = FLOOR_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.FX = validFloorSkills;
-            console.log(`✓ Floor: ${validFloorSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('FLOOR_SKILLS not found, using demo data');
-            skillsDatabase.FX = generateDemoData('FX');
-        }
-        
-        if (typeof POMMEL_SKILLS !== 'undefined') {
-            const validPommelSkills = POMMEL_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.PH = validPommelSkills;
-            console.log(`✓ Pommel Horse: ${validPommelSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('POMMEL_SKILLS not found, using demo data');
-            skillsDatabase.PH = generateDemoData('PH');
-        }
-        
-        if (typeof RINGS_SKILLS !== 'undefined') {
-            const validRingsSkills = RINGS_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.SR = validRingsSkills;
-            console.log(`✓ Still Rings: ${validRingsSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('RINGS_SKILLS not found, using demo data');
-            skillsDatabase.SR = generateDemoData('SR');
-        }
-        
-        if (typeof PARALLEL_SKILLS !== 'undefined') {
-            const validParallelSkills = PARALLEL_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.PB = validParallelSkills;
-            console.log(`✓ Parallel Bars: ${validParallelSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('PARALLEL_SKILLS not found, using demo data');
-            skillsDatabase.PB = generateDemoData('PB');
-        }
-        
-        if (typeof HIGHBAR_SKILLS !== 'undefined') {
-            const validHighbarSkills = HIGHBAR_SKILLS.filter(skill => 
-                skill && skill.name && skill.name.trim().length > 0
-            );
-            skillsDatabase.HB = validHighbarSkills;
-            console.log(`✓ High Bar: ${validHighbarSkills.length} skills loaded from embedded data`);
-        } else {
-            console.log('HIGHBAR_SKILLS not found, using demo data');
-            skillsDatabase.HB = generateDemoData('HB');
-        }
-    } catch (error) {
-        console.error('Error loading embedded skills data:', error);
-        
-        // フォールバック：すべてデモデータを使用
-        skillsDatabase.FX = generateDemoData('FX');
-        skillsDatabase.PH = generateDemoData('PH');
-        skillsDatabase.SR = generateDemoData('SR');
-        skillsDatabase.PB = generateDemoData('PB');
-        skillsDatabase.HB = generateDemoData('HB');
-    }
-
-    console.log('=== Skills Data Loading Complete ===');
-    
-    // 全体のサマリー
     Object.keys(skillsDatabase).forEach(apparatus => {
-        const skills = skillsDatabase[apparatus];
-        console.log(`${apparatus}: ${skills.length} valid techniques loaded`);
-        if (skills.length > 0) {
-            console.log(`  Sample: "${skills[0].name}" (EG: ${skills[0].elementGroup || skills[0].eg}, 難度: ${skills[0].difficulty})`);
-        }
+        skillsDatabase[apparatus] = [];
     });
 }
 
@@ -472,37 +396,6 @@ function parseCSV(csvText) {
     }
     
     return skills;
-}
-
-function generateDemoData(apparatus) {
-    const demoData = {
-        'FX': [
-            { name: 'バク転', eg: 'Ⅲ', difficulty: 'A' },
-            { name: '後方屈身2回宙返り', eg: 'Ⅲ', difficulty: 'D' },
-            { name: '前方伸身宙返り', eg: 'Ⅱ', difficulty: 'B' },
-            { name: '脚上挙支持', eg: 'Ⅰ', difficulty: 'B' }
-        ],
-        'PH': [
-            { name: 'Bセア', eg: 'Ⅰ', difficulty: 'B' },
-            { name: '横向き旋回', eg: 'Ⅱ', difficulty: 'A' },
-            { name: 'イコウ', eg: 'Ⅲ', difficulty: 'A' }
-        ],
-        'SR': [
-            { name: 'アザリアン', eg: 'Ⅱ', difficulty: 'D' },
-            { name: '後ろ振り上がり十字懸垂', eg: 'Ⅲ', difficulty: 'C' },
-            { name: 'ディスロー', eg: 'Ⅰ', difficulty: 'A' }
-        ],
-        'PB': [
-            { name: '前方屈身宙返り', eg: 'Ⅱ', difficulty: 'C' },
-            { name: '後方宙返り', eg: 'Ⅲ', difficulty: 'B' }
-        ],
-        'HB': [
-            { name: 'アドラー', eg: 'Ⅱ', difficulty: 'B' },
-            { name: 'コバチ', eg: 'Ⅲ', difficulty: 'C' }
-        ]
-    };
-    
-    return demoData[apparatus] || [];
 }
 
 // 種目切り替え
@@ -1169,7 +1062,9 @@ function checkAndUpdateSkill(inputValue, apparatus, skillIndex, skillInfo) {
     
     const skills = skillsDatabase[apparatus];
     if (!skills || skills.length === 0) {
-        console.log(`No skills database for ${apparatus}`);
+        console.error(`No skills database for ${apparatus}`);
+        currentRoutines[apparatus][skillIndex].name = inputValue.trim();
+        calculateScore(apparatus);
         return;
     }
     
@@ -1571,8 +1466,44 @@ function moveSkillToPosition(apparatus, fromIndex, toIndex) {
     calculateScore(apparatus);
 }
 
+// 旧形式の保存データは自動補完を前提とするため、技DBが無い間は採点しない。
+function hasUnavailableSkillData(apparatus) {
+    const apparatuses = apparatus ? [apparatus] : Object.keys(currentRoutines);
+    return apparatuses.some(key => key !== 'VT'
+        && !(skillsDatabase[key] || []).length
+        && currentRoutines[key].some(skill => skill.name && !skill.isCustom && !skill.isASkill));
+}
+
+function showUnavailableSkillData(apparatus) {
+    const prefix = apparatus.toLowerCase();
+    ['difficulty-score', 'group-score', 'total-score', 'target-score'].forEach(suffix => {
+        const element = document.getElementById(`${prefix}-${suffix}`);
+        if (element) element.textContent = '—';
+    });
+    let notice = document.getElementById(`${prefix}-skill-data-error`);
+    if (!notice) {
+        notice = document.createElement('p');
+        notice.id = `${prefix}-skill-data-error`;
+        notice.setAttribute('role', 'alert');
+        const container = document.getElementById(`${prefix}-skills`);
+        if (container) container.before(notice);
+    }
+    notice.textContent = '技データを確認できないため採点停止。旧形式の技を削除し、技名・難度を手入力で登録し直してください。';
+    ['report-preview', 'report-content'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.innerHTML = '';
+    });
+    updateTotalScores();
+}
+
 // スコア計算
 function calculateScore(apparatus) {
+    if (hasUnavailableSkillData(apparatus)) {
+        showUnavailableSkillData(apparatus);
+        return;
+    }
+    const unavailableNotice = document.getElementById(`${apparatus.toLowerCase()}-skill-data-error`);
+    if (unavailableNotice) unavailableNotice.remove();
     console.log(`=== CALCULATE SCORE DEBUG ===`);
     console.log(`Apparatus: ${apparatus}`);
     
@@ -1904,6 +1835,13 @@ function updateEScoreCapDisplay(apparatus) {
 
 // 総合スコア更新
 function updateTotalScores() {
+    if (hasUnavailableSkillData()) {
+        ['total-d-score', 'total-e-score', 'total-target-score'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = '—';
+        });
+        return;
+    }
     let totalDScore = 0;
     let totalEScore = 0;
     let totalND = 0;
@@ -1965,6 +1903,11 @@ function updateTotalScores() {
 
 // 種目別一覧更新
 function updateApparatusSummary() {
+    if (hasUnavailableSkillData()) {
+        const summary = document.getElementById('apparatus-summary');
+        if (summary) summary.textContent = '技データを確認できないため採点停止';
+        return;
+    }
     const summaryContainer = document.getElementById('apparatus-summary');
     if (!summaryContainer) return;
     
